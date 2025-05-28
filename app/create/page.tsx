@@ -13,10 +13,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount } from "wagmi"
+import { client } from "@/lib/story-utils"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
-  const { isConnected } = useAccount()
+  const [title, setTitle] = useState("")
+  const [category, setCategory] = useState("")
+  const [description, setDescription] = useState("")
+  const [tokenSymbol, setTokenSymbol] = useState("")
+  const [totalSupply, setTotalSupply] = useState("")
+  const [totalFunding, setTotalFunding] = useState("")
+  const [initialPrice, setInitialPrice] = useState("")
+  const [licenseType, setLicenseType] = useState("")
+  const [royaltyRate, setRoyaltyRate] = useState("")
+  const [nftContract, setNftContract] = useState("")
+  const [tokenId, setTokenId] = useState("")
+  const [loading, setLoading] = useState(false)
+  const { isConnected, address } = useAccount()
 
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", description: "", funding: "" }])
@@ -24,6 +37,49 @@ export default function CreateProjectPage() {
 
   const removeMilestone = (index: number) => {
     setMilestones(milestones.filter((_, i) => i !== index))
+  }
+
+  const handleMilestoneChange = (index: number, field: string, value: string) => {
+    setMilestones(milestones.map((m, i) => i === index ? { ...m, [field]: value } : m))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    // Compose milestones into a string for description
+    const milestonesText = milestones.map((m, i) => `Milestone ${i+1}: ${m.title}\nFunding: ${m.funding}\n${m.description}`).join("\n\n")
+    const fullDescription = `${description}\n\n---\nMilestones:\n${milestonesText}`
+    // Ensure nftContract is 0x-prefixed
+    const contractAddress = nftContract.startsWith("0x") ? nftContract : `0x${nftContract}`
+    const ipMetadata = {
+      title,
+      description: fullDescription +
+        `\n\nExtra Data: ${JSON.stringify({ category, tokenSymbol, totalSupply, totalFunding, initialPrice, licenseType, royaltyRate })}`,
+      image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8", // placeholder
+      mediaUrl: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8", // placeholder
+      mediaType: "image/png",
+      creators: [
+        {
+          name: address || "",
+          address: address || "",
+          description: "Researcher",
+          contributionPercent: 100,
+          socialMedia: [],
+        },
+      ],
+    }
+    try {
+      await client.ipAsset.register({
+        nftContract: contractAddress as `0x${string}`,
+        tokenId
+      })
+      alert("IP Asset created successfully!")
+    } catch (err) {
+      console.error(err)
+      alert("Failed to create IP Asset: " + (err as Error).message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -88,6 +144,7 @@ export default function CreateProjectPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
           className={`space-y-8 ${!isConnected ? "opacity-50 pointer-events-none" : ""}`}
+          onSubmit={handleSubmit}
         >
           {/* Basic Information */}
           <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
@@ -107,13 +164,15 @@ export default function CreateProjectPage() {
                     id="title"
                     placeholder="e.g., Anti-Aging Compound Research"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-white/80">
                     Research Category
                   </Label>
-                  <Select>
+                  <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-fuchsia-500 focus:ring-fuchsia-500/20">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -126,6 +185,30 @@ export default function CreateProjectPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nft-contract" className="text-white/80">
+                    NFT Contract Address
+                  </Label>
+                  <Input
+                    id="nft-contract"
+                    placeholder="0x..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={nftContract}
+                    onChange={e => setNftContract(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="token-id" className="text-white/80">
+                    Token ID
+                  </Label>
+                  <Input
+                    id="token-id"
+                    placeholder="e.g., 1"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={tokenId}
+                    onChange={e => setTokenId(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -136,6 +219,8 @@ export default function CreateProjectPage() {
                   id="description"
                   placeholder="Describe your research objectives, methodology, and expected outcomes..."
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/50 min-h-[120px] focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
                 />
               </div>
 
@@ -148,6 +233,8 @@ export default function CreateProjectPage() {
                     id="token-symbol"
                     placeholder="e.g., $LONGEVITY"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={tokenSymbol}
+                    onChange={e => setTokenSymbol(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -158,6 +245,8 @@ export default function CreateProjectPage() {
                     id="total-supply"
                     placeholder="e.g., 1,000,000"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={totalSupply}
+                    onChange={e => setTotalSupply(e.target.value)}
                   />
                 </div>
               </div>
@@ -182,6 +271,8 @@ export default function CreateProjectPage() {
                     id="total-funding"
                     placeholder="e.g., $750,000"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={totalFunding}
+                    onChange={e => setTotalFunding(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -192,6 +283,8 @@ export default function CreateProjectPage() {
                     id="initial-price"
                     placeholder="e.g., $0.75"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={initialPrice}
+                    onChange={e => setInitialPrice(e.target.value)}
                   />
                 </div>
               </div>
@@ -236,15 +329,21 @@ export default function CreateProjectPage() {
                       <Input
                         placeholder="Milestone title"
                         className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                        value={milestone.title}
+                        onChange={e => handleMilestoneChange(index, "title", e.target.value)}
                       />
                       <Input
                         placeholder="Funding amount"
                         className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                        value={milestone.funding}
+                        onChange={e => handleMilestoneChange(index, "funding", e.target.value)}
                       />
                     </div>
                     <Textarea
                       placeholder="Milestone description and success criteria"
                       className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                      value={milestone.description}
+                      onChange={e => handleMilestoneChange(index, "description", e.target.value)}
                     />
                   </motion.div>
                 ))}
@@ -266,7 +365,7 @@ export default function CreateProjectPage() {
                   <Label htmlFor="license-type" className="text-white/80">
                     License Type
                   </Label>
-                  <Select>
+                  <Select value={licenseType} onValueChange={setLicenseType}>
                     <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-fuchsia-500 focus:ring-fuchsia-500/20">
                       <SelectValue placeholder="Select license" />
                     </SelectTrigger>
@@ -285,6 +384,8 @@ export default function CreateProjectPage() {
                     id="royalty-rate"
                     placeholder="e.g., 15"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={royaltyRate}
+                    onChange={e => setRoyaltyRate(e.target.value)}
                   />
                 </div>
               </div>
@@ -328,9 +429,9 @@ export default function CreateProjectPage() {
             <Button
               type="submit"
               className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20"
-              disabled={!isConnected}
+              disabled={!isConnected || loading}
             >
-              Create IP Asset & Launch Project
+              {loading ? "Creating..." : "Create IP Asset & Launch Project"}
             </Button>
           </motion.div>
         </motion.form>

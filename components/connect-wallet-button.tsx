@@ -45,12 +45,15 @@ export default function ConnectWalletButton() {
                     className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300"
                   >
                     <div className="flex items-center gap-2">
+                      {/* @ts-ignore */}
                       {chain?.hasIcon && (
                         <div className="w-4 h-4 rounded-full overflow-hidden">
+                          {/* @ts-ignore */}
                           {chain.iconUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              alt={chain.name ?? "Chain icon"}
+                                alt={chain.name ?? "Chain icon"}
+                                // @ts-ignore
                               src={chain.iconUrl || "/placeholder.svg"}
                               className="w-full h-full object-cover"
                             />
