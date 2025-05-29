@@ -8,6 +8,7 @@ import { createCommercialRemixTerms, SPGNFTContractAddress } from "@/lib/story-u
 import { client, networkInfo } from "@/lib/config";
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs";
 import { IpMetadata } from "@story-protocol/core-sdk";
+import { Address, zeroAddress } from "viem";
 
 // Utility to safely stringify objects with BigInt values
 const safeStringify = (obj: any) =>
@@ -19,6 +20,12 @@ export default function TestIpPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attachLoading, setAttachLoading] = useState(false);
+  const [attachResult, setAttachResult] = useState<any>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [mintLoading, setMintLoading] = useState(false);
+  const [mintResult, setMintResult] = useState<any>(null);
+  const [mintError, setMintError] = useState<string | null>(null);
 
   const handleRegister = async () => {
     setLoading(true);
@@ -115,6 +122,83 @@ export default function TestIpPage() {
     }
   };
 
+  const handleAttachTerms = async () => {
+    if (!result?.ipId) return;
+    setAttachLoading(true);
+    setAttachResult(null);
+    setAttachError(null);
+    try {
+      // 1. Create sample license terms (non-commercial flavor)
+      const licenseTerms = {
+        defaultMintingFee: BigInt(0),
+        currency: "0x1514000000000000000000000000000000000000" as Address, // $WIP
+        royaltyPolicy: zeroAddress,
+        transferable: false,
+        expiration: BigInt(0),
+        commercialUse: false,
+        commercialAttribution: false,
+        commercializerChecker: zeroAddress,
+        commercializerCheckerData: "0x00" as `0x${string}`,
+        commercialRevShare: 0,
+        commercialRevCeiling: BigInt(0),
+        derivativesAllowed: false,
+        derivativesAttribution: false,
+        derivativesApproval: false,
+        derivativesReciprocal: false,
+        derivativeRevCeiling: BigInt(0),
+        uri: "",
+      };
+      // 2. Register the license terms
+      const regRes = await client.license.registerPILTerms({
+        ...licenseTerms,
+        txOptions: { waitForTransaction: true },
+      });
+      // 3. Attach the license terms to the IP
+      const attachRes = await client.license.attachLicenseTerms({
+        licenseTermsId: String(regRes.licenseTermsId),
+        ipId: result.ipId,
+        txOptions: { waitForTransaction: true },
+      });
+      setAttachResult({
+        txHash: attachRes.txHash,
+        licenseTermsId: regRes.licenseTermsId,
+        success: attachRes.success,
+      });
+    } catch (err: any) {
+      setAttachError(err?.message || "Unknown error");
+    } finally {
+      setAttachLoading(false);
+    }
+  };
+
+  const handleMintLicenseToken = async () => {
+    if (!result?.ipId || !attachResult?.licenseTermsId) return;
+    setMintLoading(true);
+    setMintResult(null);
+    setMintError(null);
+    try {
+      // Use a valid demo address for receiver and licensor
+      const receiver = "0x000000000000000000000000000000000000dead";
+      const response = await client.license.mintLicenseTokens({
+        licenseTermsId: String(attachResult.licenseTermsId),
+        licensorIpId: result.ipId,
+        receiver,
+        amount: 1,
+        maxMintingFee: BigInt(0),
+        maxRevenueShare: 100,
+        txOptions: { waitForTransaction: true },
+      });
+      setMintResult({
+        txHash: response.txHash,
+        licenseTokenIds: response.licenseTokenIds,
+      });
+    } catch (err: any) {
+      setMintError(err?.message || "Unknown error");
+    } finally {
+      setMintLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
@@ -127,20 +211,61 @@ export default function TestIpPage() {
           {loading ? "Registering..." : "Register IP (One Click)"}
         </Button>
         {result && (
-          <div className="mt-4 text-green-700 text-sm break-words">
-            <div className="font-semibold">Root IPA created:</div>
-            <div>Transaction Hash: {result.txHash}</div>
-            <div>IPA ID: {result.ipId}</div>
-            <div>License Terms IDs: {JSON.stringify(result.licenseTermsIds)}</div>
-            <a
-              href={result.explorer}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 underline mt-2 inline-block"
+          <>
+            <div className="mt-4 text-green-700 text-sm break-words">
+              <div className="font-semibold">Root IPA created:</div>
+              <div>Transaction Hash: {result.txHash}</div>
+              <div>IPA ID: {result.ipId}</div>
+              <div>License Terms IDs: {JSON.stringify(result.licenseTermsIds)}</div>
+              <a
+                href={result.explorer}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline mt-2 inline-block"
+              >
+                View on Explorer
+              </a>
+            </div>
+            <Button
+              className="w-full mt-4 text-black"
+              onClick={handleAttachTerms}
+              disabled={attachLoading}
+              variant="outline"
             >
-              View on Explorer
-            </a>
-          </div>
+              {attachLoading ? "Attaching Terms..." : "Attach License Terms (Sample)"}
+            </Button>
+            {attachResult && (
+              <>
+                <div className="mt-4 text-blue-700 text-sm break-words">
+                  <div className="font-semibold">License Terms Attached:</div>
+                  <div>License Terms ID: {attachResult.licenseTermsId}</div>
+                  <div>Transaction Hash: {attachResult.txHash}</div>
+                  <div>Status: {attachResult.success ? "Success" : "Already attached"}</div>
+                </div>
+                <Button
+                  className="w-full mt-4 text-black"
+                  onClick={handleMintLicenseToken}
+                  disabled={mintLoading}
+                  variant="outline"
+                >
+                  {mintLoading ? "Minting License Token..." : "Mint License Token"}
+                </Button>
+                {mintResult && (
+                  <div className="mt-4 text-purple-700 text-sm break-words">
+                    <div className="font-semibold">License Token Minted:</div>
+                    <div>Transaction Hash: {mintResult.txHash}</div>
+                    <div>License Token IDs: {safeStringify(mintResult.licenseTokenIds)}</div>
+                  </div>
+                )}
+                {mintError && (
+                  <div className="mt-4 text-red-600 text-sm break-words">{mintError}</div>
+                )}
+              </>
+            )}
+            {attachError && (
+              <div className="mt-4 text-red-600 text-sm break-words">{attachError}</div>
+            )}
+          </>
         )}
         {error && (
           <div className="mt-4 text-red-600 text-sm break-words">{error}</div>
