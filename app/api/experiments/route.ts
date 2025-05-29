@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { PrismaClient } from "@/lib/generated/prisma";
+const prisma = new PrismaClient();
 
 // GET: Return all experiments (projects)
 export async function GET() {
@@ -20,6 +21,7 @@ export async function GET() {
 
 // POST: Create a new experiment (project)
 export async function POST(req: NextRequest) {
+    console.log("req")
   try {
     const body = await req.json()
     const {
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
       licenses = [],
       documents = [],
     } = body
+    console.log("body", body)
 
     const project = await prisma.project.create({
       data: {
@@ -89,6 +92,7 @@ export async function POST(req: NextRequest) {
         documents: true,
       },
     })
+    console.log("project", project)
     return NextResponse.json({ project }, { status: 201 })
   } catch (error) {
     console.error(error)

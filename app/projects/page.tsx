@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-import { getAllFilesFromPinata } from "@/lib/uploadToIpfs"
 
 export default function ProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
@@ -22,8 +21,11 @@ export default function ProjectsPage() {
     async function fetchProjects() {
       setLoading(true)
       try {
-        const files = await getAllFilesFromPinata()
-        setProjects(files)
+        const res = await fetch("/api/experiments")
+        if (!res.ok) throw new Error("Failed to fetch projects")
+        const data = await res.json()
+        console.log("data", data)
+        setProjects(data.projects || [])
       } catch (e) {
         setProjects([])
       }
@@ -33,8 +35,8 @@ export default function ProjectsPage() {
   }, [])
 
   const filteredProjects = projects.filter((project) => {
-    const category = project.metadata?.keyvalues?.category || "Other"
-    const title = project.metadata?.name || project.name || "Untitled Project"
+    const category = project.category || "Other"
+    const title = project.title || project.name || "Untitled Project"
     const matchesCategory = selectedCategory === "All" || category === selectedCategory
     const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
@@ -183,18 +185,18 @@ export default function ProjectsPage() {
             <div className="col-span-2 text-center text-white/70 py-12">No projects found.</div>
           ) : (
             filteredProjects.map((project, idx) => {
-              const category = project.metadata?.keyvalues?.category || "Other"
-              const color = project.metadata?.keyvalues?.color || "fuchsia"
-              const status = project.metadata?.keyvalues?.status || "Active"
-              const title = project.metadata?.name || project.name || `Project #${idx+1}`
-              const description = project.metadata?.keyvalues?.description || project.description || "No description."
-              const token = project.metadata?.keyvalues?.token || "$TOKEN"
-              const raised = Number(project.metadata?.keyvalues?.raised) || 0
-              const target = Number(project.metadata?.keyvalues?.target) || 1000000
-              const investors = Number(project.metadata?.keyvalues?.investors) || 0
-              const phase = project.metadata?.keyvalues?.phase || "Phase 1"
-              const roi = project.metadata?.keyvalues?.roi || "+0%"
-              const id = project.id || project.ipfs_pin_hash || idx
+              const category = project.category || "Other"
+              const color = "fuchsia"
+              const status = "Active"
+              const title = project.title || `Project #${idx+1}`
+              const description = project.description || "No description."
+              const token = project.tokenSymbol || "$TOKEN"
+              const raised = 0
+              const target = Number(project.totalFunding) || 1000000
+              const investors = 0
+              const phase = "Phase 1"
+              const roi = "+0%"
+              const id = project.id || idx
               return (
                 <motion.div key={id} variants={item} whileHover={{ y: -5 }} className="h-full">
                   <Link href={`/projects/${id}`} className="block h-full">
