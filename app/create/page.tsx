@@ -13,7 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount } from "wagmi"
-import { client } from "@/lib/story-utils"
+import { client, networkInfo } from "@/lib/config"
+import { createHash } from "crypto"
+import { createCommercialRemixTerms, SPGNFTContractAddress } from "@/lib/story-utils"
+import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -30,6 +33,8 @@ export default function CreateProjectPage() {
   const [tokenId, setTokenId] = useState("")
   const [loading, setLoading] = useState(false)
   const { isConnected, address } = useAccount()
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", description: "", funding: "" }])
@@ -46,37 +51,82 @@ export default function CreateProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Compose milestones into a string for description
-    const milestonesText = milestones.map((m, i) => `Milestone ${i+1}: ${m.title}\nFunding: ${m.funding}\n${m.description}`).join("\n\n")
-    const fullDescription = `${description}\n\n---\nMilestones:\n${milestonesText}`
-    // Ensure nftContract is 0x-prefixed
-    const contractAddress = nftContract.startsWith("0x") ? nftContract : `0x${nftContract}`
-    const ipMetadata = {
-      title,
-      description: fullDescription +
-        `\n\nExtra Data: ${JSON.stringify({ category, tokenSymbol, totalSupply, totalFunding, initialPrice, licenseType, royaltyRate })}`,
-      image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8", // placeholder
-      mediaUrl: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8", // placeholder
-      mediaType: "image/png",
-      creators: [
-        {
-          name: address || "",
-          address: address || "",
-          description: "Researcher",
-          contributionPercent: 100,
-          socialMedia: [],
-        },
-      ],
-    }
+    setResult(null)
+    setError(null)
     try {
-      await client.ipAsset.register({
-        nftContract: contractAddress as `0x${string}`,
-        tokenId
+      // 1. Compose metadata
+      const projectName = title
+      const ipMetadata = client.ipAsset.generateIpMetadata({
+        title: projectName,
+        description: description + "\n\n---\nMilestones:\n" + milestones.map((m, i) => `Milestone ${i+1}: ${m.title}\nFunding: ${m.funding}\n${m.description}`).join("\n\n"),
+        createdAt: Math.floor(Date.now() / 1000).toString(),
+        creators: [
+          {
+            name: address || "" as `0x${string}`,
+            address: address || "" as `0x${string}`,
+            contributionPercent: 100,
+          },
+        ],
+        image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
+        imageHash: "" as `0x${string}`,
+        mediaUrl: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
+        mediaHash: "" as `0x${string}`,
+        mediaType: "image/png",
+        attributes: [
+          { key: "Category", value: category },
+          { key: "Token Symbol", value: tokenSymbol },
+          { key: "Total Supply", value: totalSupply },
+          { key: "Total Funding", value: totalFunding },
+          { key: "Initial Price", value: initialPrice },
+          { key: "License Type", value: licenseType },
+          { key: "Royalty Rate", value: royaltyRate },
+        ],
       })
-      alert("IP Asset created successfully!")
-    } catch (err) {
-      console.error(err)
-      alert("Failed to create IP Asset: " + (err as Error).message)
+      const nftMetadata = {
+        name: `${projectName} - IP Rights`,
+        description: `NFT representing IP rights to ${projectName} and future royalties`,
+        image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
+        external_url: "https://pump.science/projects/" + projectName.replace(/\s+/g, "-").toLowerCase(),
+        attributes: [
+          { key: "Funding Target", value: totalFunding },
+          { key: "Initial Token Price", value: initialPrice },
+          ...milestones.map((m, i) => ({ key: `Milestone ${i+1}`, value: m.title })),
+          { key: "Royalty Rate", value: royaltyRate },
+        ],
+      }
+      // 2. Upload to IPFS
+      const safeStringify = (obj: any) => JSON.stringify(obj, (key, value) => typeof value === "bigint" ? value.toString() : value)
+      const [ipIpfsHash, nftIpfsHash] = await Promise.all([
+        uploadJSONToIPFS(ipMetadata),
+        uploadJSONToIPFS(nftMetadata)
+      ])
+      // 3. Register IP Asset
+      const response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
+        spgNftContract: SPGNFTContractAddress,
+        licenseTermsData: [
+          {
+            terms: createCommercialRemixTerms({
+              defaultMintingFee: Number(initialPrice) || 0.5,
+              commercialRevShare: Number(royaltyRate) || 15,
+            }),
+          },
+        ],
+        ipMetadata: {
+          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+          ipMetadataHash: `0x${createHash("sha256").update(safeStringify(ipMetadata)).digest("hex")}`,
+          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+          nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
+        },
+        txOptions: { waitForTransaction: true },
+      })
+      setResult({
+        txHash: response.txHash,
+        ipId: response.ipId,
+        licenseTermsIds: response.licenseTermsIds,
+        explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
+      })
+    } catch (err: any) {
+      setError(err?.message || "Unknown error during IP registration")
     } finally {
       setLoading(false)
     }
@@ -434,6 +484,28 @@ export default function CreateProjectPage() {
               {loading ? "Creating..." : "Create IP Asset & Launch Project"}
             </Button>
           </motion.div>
+          {result && (
+            <div className="mt-8 p-4 border border-green-400/30 bg-green-900/20 rounded-xl text-green-200">
+              <h3 className="font-bold text-green-300 mb-2">Research Project Registered!</h3>
+              <div className="text-sm mb-2">
+                <span className="font-medium">IP Asset ID:</span>
+                <span className="ml-2 break-words">{result.ipId}</span>
+              </div>
+              <a
+                href={result.explorer}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 underline text-xs"
+              >
+                View IP Details on Explorer
+              </a>
+            </div>
+          )}
+          {error && (
+            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+              <span className="font-semibold">Error:</span> {error}
+            </div>
+          )}
         </motion.form>
       </div>
     </div>
