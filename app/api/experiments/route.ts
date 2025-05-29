@@ -44,6 +44,17 @@ export async function POST(req: NextRequest) {
       documents = [],
     } = body
     console.log("body", body)
+
+    // Ensure the creator exists in the User table
+    let creator = await prisma.user.findUnique({
+      where: { address: creatorAddress }
+    });
+    if (!creator) {
+      creator = await prisma.user.create({
+        data: { address: creatorAddress }
+      });
+    }
+
     const project = await prisma.project.create({
       data: {
         title,
