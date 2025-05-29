@@ -14,6 +14,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String       @id @default(uuid())
+  address     String       @unique
+  projects    Project[]    @relation("UserProjects")
+  investments Investment[]
+  votes       Vote[]
+  activities  Activity[]
+  createdAt   DateTime     @default(now())
+}
+
 model Project {
   id               String      @id @default(uuid())
   title            String
@@ -29,11 +39,18 @@ model Project {
   tokenId          String
   createdAt        DateTime    @default(now())
   creatorAddress   String
+  creator          User?       @relation("UserProjects", fields: [creatorAddress], references: [address])
+  status           String      // e.g. "Active", "Completed", "Pending"
+  currentFunding   String      // Current amount funded
+  tokenPrice       String      // Current token price
+  investors        Investment[]
   ipfsMetadataHash String?
   nftMetadataHash  String?
   milestones       Milestone[]
   licenses         License[]
   documents        Document[]
+  proposals        Proposal[]
+  activities       Activity[]
 }
 
 model Milestone {
@@ -66,4 +83,48 @@ model Document {
   projectId  String
   url        String
   uploadedAt DateTime @default(now())
+}
+
+model Investment {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  project    Project  @relation(fields: [projectId], references: [id])
+  projectId  String
+  amount     String   // Amount invested
+  tokens     String   // Number of tokens held
+  createdAt  DateTime @default(now())
+}
+
+model Proposal {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  title       String
+  description String
+  status      String   // e.g. "Active", "Closed"
+  endsAt      DateTime
+  votes       Vote[]
+  createdAt   DateTime @default(now())
+}
+
+model Vote {
+  id         String   @id @default(uuid())
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  proposalId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  choice     String   // "Yes" or "No"
+  createdAt  DateTime @default(now())
+}
+
+model Activity {
+  id         String   @id @default(uuid())
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  project    Project? @relation(fields: [projectId], references: [id])
+  projectId  String?
+  type       String   // e.g. "Milestone", "Dividend", "Proposal"
+  message    String
+  createdAt  DateTime @default(now())
 }

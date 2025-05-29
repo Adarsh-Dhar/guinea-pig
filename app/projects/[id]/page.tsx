@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Vote, Activity, ChevronUp, ChevronDown, Sparkles, Dna } from "lucide-react"
@@ -11,10 +11,57 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ParticleBackground from "@/components/particle-background"
 import { LineChart } from "@/components/line-chart"
 import ConnectWalletButton from "@/components/connect-wallet-button"
+import { useParams } from "next/navigation"
 
 export default function ProjectDetailPage() {
-  const [expanded, setExpanded] = useState(false)
-  const [voteAnimation, setVoteAnimation] = useState(false)
+  const params = useParams();
+  const id = params?.id;
+
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [voteAnimation, setVoteAnimation] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    fetch(`/api/experiments/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch project data");
+        return res.json();
+      })
+      .then((data) => {
+        setProject(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950">
+        <span className="text-white text-xl animate-pulse">Loading project...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950">
+        <span className="text-red-400 text-xl">{error}</span>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return null;
+  }
+
+  const p = project.project || {};
 
   const toggleExpand = () => {
     setExpanded(!expanded)
@@ -70,7 +117,7 @@ export default function ProjectDetailPage() {
         >
           <div className="flex items-center space-x-4 mb-4">
             <Badge className="bg-gradient-to-r from-fuchsia-600 to-fuchsia-400 text-white px-3 py-1 rounded-full">
-              Longevity
+              {p.category || "-"}
             </Badge>
             <Badge className="border-green-400 text-green-400 px-3 py-1 rounded-full" variant="outline">
               Active
@@ -80,15 +127,14 @@ export default function ProjectDetailPage() {
               whileHover={{ scale: 1.05 }}
               className="text-fuchsia-400 font-mono font-bold bg-fuchsia-400/10 px-3 py-1 rounded-full"
             >
-              $LONGEVITY
+              {p.tokenSymbol ? `$${p.tokenSymbol}` : "-"}
             </motion.span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400">
-            Longevity Research: Anti-Aging Compounds
+            {p.title || "Untitled Project"}
           </h1>
           <p className="text-white/80 text-lg max-w-3xl">
-            Testing novel compounds for extending lifespan in model organisms. Our research focuses on identifying and
-            validating compounds that can significantly extend healthy lifespan across multiple species.
+            {p.description || "No description provided."}
           </p>
         </motion.div>
 
@@ -130,48 +176,27 @@ export default function ProjectDetailPage() {
 
               <TabsContent value="overview" className="space-y-6">
                 <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-                  <h3 className="text-white text-xl font-bold mb-4">Research Phases</h3>
+                  <h3 className="text-white text-xl font-bold mb-4">Milestones</h3>
                   <div className="space-y-4">
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-green-400/20 flex items-center justify-center mr-3">
-                          <Sparkles className="h-5 w-5 text-green-400" />
-                        </div>
-                        <span className="text-green-400 font-medium">Phase 1: C. elegans (Worms)</span>
-                      </div>
-                      <Badge className="bg-green-500 text-white">Completed</Badge>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="p-4 bg-gradient-to-r from-blue-900/20 to-blue-800/10 border border-blue-400/30 rounded-xl flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-400/20 flex items-center justify-center mr-3">
-                          <Dna className="h-5 w-5 text-blue-400 animate-spin-slow" />
-                        </div>
-                        <span className="text-blue-400 font-medium">Phase 2: Drosophila (Fruit Flies)</span>
-                      </div>
-                      <Badge className="bg-blue-500 text-white">In Progress</Badge>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="p-4 bg-gradient-to-r from-gray-900/20 to-gray-800/10 border border-gray-400/30 rounded-xl flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-gray-400/20 flex items-center justify-center mr-3">
-                          <Activity className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <span className="text-gray-400 font-medium">Phase 3: Mus musculus (Mice)</span>
-                      </div>
-                      <Badge variant="outline" className="border-gray-400 text-gray-400">
-                        Pending
-                      </Badge>
-                    </motion.div>
+                    {Array.isArray(p.milestones) && p.milestones.length > 0 ? (
+                      p.milestones.map((m: any, i: number) => (
+                        <motion.div
+                          key={m.id}
+                          whileHover={{ scale: 1.02 }}
+                          className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl flex items-center justify-between"
+                        >
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 rounded-full bg-green-400/20 flex items-center justify-center mr-3">
+                              <Sparkles className="h-5 w-5 text-green-400" />
+                            </div>
+                            <span className="text-green-400 font-medium">{m.title}</span>
+                          </div>
+                          <Badge className="bg-green-500 text-white">{m.funding}</Badge>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="text-white/60">No milestones available.</div>
+                    )}
                   </div>
                 </Card>
 
@@ -184,18 +209,18 @@ export default function ProjectDetailPage() {
                         whileHover={{ scale: 1.05 }}
                         className="text-white font-mono bg-fuchsia-500/10 px-3 py-1 rounded-full"
                       >
-                        0x1a2b3c4d...
+                        {p.nftContract || "-"}
                       </motion.span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                       <span className="text-white/70">Story Protocol License:</span>
                       <Badge className="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white">
-                        Commercial Use
+                        {p.licenseType || "-"}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                       <span className="text-white/70">Royalty Rate:</span>
-                      <span className="text-white font-bold">15%</span>
+                      <span className="text-white font-bold">{p.royaltyRate ? `${p.royaltyRate}%` : "-"}</span>
                     </div>
                   </div>
                 </Card>
@@ -207,40 +232,7 @@ export default function ProjectDetailPage() {
                     <Activity className="h-6 w-6 text-cyan-400 mr-2" />
                     <h3 className="text-white text-xl font-bold">Live Experiment Data</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="p-4 bg-gradient-to-r from-blue-900/20 to-blue-800/10 border border-blue-400/30 rounded-xl"
-                    >
-                      <div className="text-3xl font-bold text-blue-400 mb-1">127</div>
-                      <div className="text-white/70">Active Flies</div>
-                    </motion.div>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl"
-                    >
-                      <div className="text-3xl font-bold text-green-400 mb-1">+34%</div>
-                      <div className="text-white/70">Lifespan Increase</div>
-                    </motion.div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="text-white font-medium">Experiment Progress</h4>
-                      <span className="text-cyan-400 text-sm">Updated 2h ago</span>
-                    </div>
-                    <div className="h-[200px] w-full bg-white/5 rounded-xl p-4">
-                      <LineChart data={chartData} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm text-white/70">Latest Update:</div>
-                    <div className="p-3 bg-cyan-900/20 border border-cyan-400/30 rounded-lg text-white">
-                      Compound XYZ-123 showing promising results in cohort B with a 34% increase in average lifespan
-                      compared to control group.
-                    </div>
-                  </div>
+                  <div className="text-white/70">No live data available.</div>
                 </Card>
               </TabsContent>
 
@@ -250,123 +242,29 @@ export default function ProjectDetailPage() {
                     <Vote className="h-6 w-6 text-purple-400 mr-2" />
                     <h3 className="text-white text-xl font-bold">Active Proposals</h3>
                   </div>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="p-4 border border-purple-400/30 bg-gradient-to-r from-purple-900/20 to-purple-800/10 rounded-xl"
-                  >
-                    <h4 className="text-white font-semibold mb-2">Proposal #3: Proceed to Mouse Trials</h4>
-                    <p className="text-white/70 text-sm mb-4">
-                      Based on positive results in fruit flies, should we allocate funds for Phase 3 mouse trials?
-                    </p>
-
-                    <div className="space-y-3 mb-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-green-400">Yes: 67%</span>
-                          <span className="text-green-400">1,340 votes</span>
-                        </div>
-                        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: "0%" }}
-                            animate={{ width: "67%" }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-red-400">No: 33%</span>
-                          <span className="text-red-400">660 votes</span>
-                        </div>
-                        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: "0%" }}
-                            animate={{ width: "33%" }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-white/70 text-sm">Ends in 2 days</span>
-                      <div className="space-x-2">
-                        <Button
-                          size="sm"
-                          className={`bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white ${
-                            voteAnimation ? "animate-pulse" : ""
-                          }`}
-                          onClick={triggerVoteAnimation}
-                        >
-                          Vote Yes
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-red-400 text-red-400 hover:bg-red-400/10"
-                          onClick={triggerVoteAnimation}
-                        >
-                          Vote No
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <div className="text-white/70">No governance proposals available.</div>
                 </Card>
               </TabsContent>
 
               <TabsContent value="tokenomics" className="space-y-6">
                 <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-                  <h3 className="text-white text-xl font-bold mb-4">Token Distribution</h3>
+                  <h3 className="text-white text-xl font-bold mb-4">Tokenomics</h3>
                   <div className="space-y-4">
-                    <div className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-white font-medium">Research Funding</span>
-                        <span className="text-fuchsia-400 font-bold">75%</span>
-                      </div>
-                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: "0%" }}
-                          animate={{ width: "75%" }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-fuchsia-600 to-fuchsia-400 rounded-full"
-                        />
-                      </div>
-                      <div className="text-right text-white/70 text-sm mt-1">750,000 tokens</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">Token Symbol</span>
+                      <span className="text-fuchsia-400 font-bold">{p.tokenSymbol || "-"}</span>
                     </div>
-
-                    <div className="p-4 bg-gradient-to-r from-cyan-900/20 to-cyan-800/10 border border-cyan-400/30 rounded-xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-white font-medium">Team</span>
-                        <span className="text-cyan-400 font-bold">15%</span>
-                      </div>
-                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: "0%" }}
-                          animate={{ width: "15%" }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full"
-                        />
-                      </div>
-                      <div className="text-right text-white/70 text-sm mt-1">150,000 tokens</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">Total Supply</span>
+                      <span className="text-fuchsia-400 font-bold">{p.totalSupply || "-"}</span>
                     </div>
-
-                    <div className="p-4 bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-white font-medium">Community</span>
-                        <span className="text-purple-400 font-bold">10%</span>
-                      </div>
-                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: "0%" }}
-                          animate={{ width: "10%" }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full"
-                        />
-                      </div>
-                      <div className="text-right text-white/70 text-sm mt-1">100,000 tokens</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">Initial Price</span>
+                      <span className="text-fuchsia-400 font-bold">{p.initialPrice || "-"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">Total Funding</span>
+                      <span className="text-fuchsia-400 font-bold">{p.totalFunding || "-"}</span>
                     </div>
                   </div>
                 </Card>
@@ -388,36 +286,28 @@ export default function ProjectDetailPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-white/70">Funding Progress</span>
-                    <span className="text-white">$450K / $750K</span>
-                  </div>
-                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-[60%] bg-gradient-to-r from-fuchsia-600 to-fuchsia-400 rounded-full relative">
-                      <div className="absolute top-0 left-0 h-full w-full bg-white/30 animate-pulse-fast" />
-                    </div>
+                    <span className="text-white">{p.currentFunding ? `$${p.currentFunding} / $${p.totalFunding}` : `0 / $${p.totalFunding || '-'}`}</span>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
                     <div className="text-white/70 mb-1">Token Price</div>
-                    <div className="text-white text-lg font-bold">$1.89</div>
+                    <div className="text-white text-lg font-bold">{p.initialPrice || '-'}</div>
                   </motion.div>
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
                     <div className="text-white/70 mb-1">24h Change</div>
-                    <div className="text-green-400 text-lg font-bold">+12.4%</div>
+                    <div className="text-green-400 text-lg font-bold">-</div>
                   </motion.div>
                 </div>
-
                 <div className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-white">Your Investment</span>
-                    <span className="text-fuchsia-400 font-mono">0 $LONGEVITY</span>
+                    <span className="text-fuchsia-400 font-mono">-</span>
                   </div>
                   <div className="text-white/70 text-sm">Connect your wallet to invest</div>
                 </div>
-
                 <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30">
-                  Buy $LONGEVITY Tokens
+                  Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
                 </Button>
               </div>
             </Card>
@@ -430,49 +320,8 @@ export default function ProjectDetailPage() {
                   {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
               </div>
-
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                  <span className="text-white/70">Total Investors</span>
-                  <span className="text-white font-bold">234</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                  <span className="text-white/70">Market Cap</span>
-                  <span className="text-white font-bold">$1.89M</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                  <span className="text-white/70">ROI</span>
-                  <span className="text-green-400 font-bold">+127%</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                  <span className="text-white/70">Risk Level</span>
-                  <Badge className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-white">Medium</Badge>
-                </div>
-
-                <AnimatePresence>
-                  {expanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-3 overflow-hidden"
-                    >
-                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                        <span className="text-white/70">Token Holders</span>
-                        <span className="text-white font-bold">412</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                        <span className="text-white/70">Governance Votes</span>
-                        <span className="text-white font-bold">2,000</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                        <span className="text-white/70">Research Citations</span>
-                        <span className="text-white font-bold">7</span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="text-white/60">No stats available.</div>
               </div>
             </Card>
           </motion.div>

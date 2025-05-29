@@ -44,13 +44,15 @@ export async function POST(req: NextRequest) {
       documents = [],
     } = body
     console.log("body", body)
-
     const project = await prisma.project.create({
       data: {
         title,
         description,
         category,
         tokenSymbol,
+        status: "PENDING", // Add default status
+        currentFunding: "0", // Add initial funding
+        tokenPrice: initialPrice, // Map initialPrice to tokenPrice
         totalSupply,
         totalFunding,
         initialPrice,
