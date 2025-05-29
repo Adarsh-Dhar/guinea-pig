@@ -10,9 +10,11 @@ export async function uploadJSONToIPFS(jsonMetadata: any): Promise<string> {
     return IpfsHash
 }
 
-// File upload to IPFS is not supported in the browser with fs/path.
-// If you need to upload files from the browser, accept a File or Blob directly.
-// For server-side uploads, move this logic to an API route.
-// export async function uploadFileToIPFS(filePath: string, fileName: string, fileType: string): Promise<string> {
-//     // This function requires Node.js modules and should be implemented server-side.
-// }
+/**
+ * Get all files from Pinata (browser-compatible)
+ * @returns {Promise<any[]>} List of files
+ */
+export async function getAllFilesFromPinata() {
+    console.log(await pinata.listFiles().all())
+    return await pinata.listFiles().all();
+}

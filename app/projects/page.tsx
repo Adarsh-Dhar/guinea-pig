@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, Users, Clock, Search, Filter } from "lucide-react"
@@ -10,73 +10,33 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-
-const projects = [
-  {
-    id: 1,
-    title: "Longevity Research: Anti-Aging Compounds",
-    description: "Testing novel compounds for extending lifespan in model organisms",
-    token: "$LONGEVITY",
-    raised: 450000,
-    target: 750000,
-    investors: 234,
-    phase: "Phase 2: Fruit Flies",
-    status: "Active",
-    roi: "+127%",
-    category: "Longevity",
-    color: "fuchsia",
-  },
-  {
-    id: 2,
-    title: "Cancer Immunotherapy Enhancement",
-    description: "Developing enhanced CAR-T cell therapies for solid tumors",
-    token: "$IMMUNO",
-    raised: 890000,
-    target: 1200000,
-    investors: 456,
-    phase: "Phase 1: Cell Culture",
-    status: "Active",
-    roi: "+89%",
-    category: "Oncology",
-    color: "cyan",
-  },
-  {
-    id: 3,
-    title: "Neural Interface Technology",
-    description: "Brain-computer interfaces for treating paralysis",
-    token: "$NEURAL",
-    raised: 1200000,
-    target: 1200000,
-    investors: 678,
-    phase: "Phase 3: Human Trials",
-    status: "Funded",
-    roi: "+203%",
-    category: "Neuroscience",
-    color: "purple",
-  },
-  {
-    id: 4,
-    title: "Microbiome Therapeutics",
-    description: "Engineered probiotics for metabolic disorders",
-    token: "$MICROB",
-    raised: 320000,
-    target: 600000,
-    investors: 189,
-    phase: "Phase 1: Preclinical",
-    status: "Active",
-    roi: "+45%",
-    category: "Microbiome",
-    color: "fuchsia",
-  },
-]
+import { getAllFilesFromPinata } from "@/lib/uploadToIpfs"
 
 export default function ProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
+  const [projects, setProjects] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProjects() {
+      setLoading(true)
+      try {
+        const files = await getAllFilesFromPinata()
+        setProjects(files)
+      } catch (e) {
+        setProjects([])
+      }
+      setLoading(false)
+    }
+    fetchProjects()
+  }, [])
 
   const filteredProjects = projects.filter((project) => {
-    const matchesCategory = selectedCategory === "All" || project.category === selectedCategory
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase())
+    const category = project.metadata?.keyvalues?.category || "Other"
+    const title = project.metadata?.name || project.name || "Untitled Project"
+    const matchesCategory = selectedCategory === "All" || category === selectedCategory
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
@@ -217,76 +177,94 @@ export default function ProjectsPage() {
 
         {/* Projects Grid */}
         <motion.div variants={container} initial="hidden" animate="show" className="grid md:grid-cols-2 gap-6">
-          {filteredProjects.map((project) => (
-            <motion.div key={project.id} variants={item} whileHover={{ y: -5 }} className="h-full">
-              <Link href={`/projects/${project.id}`} className="block h-full">
-                <Card
-                  className={`h-full bg-white/5 backdrop-blur-lg border border-white/10 hover:border-${project.color}-500/50 rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-${project.color}-500/20`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <Badge className={`bg-${project.color}-600 text-white px-3 py-1 rounded-full text-xs font-medium`}>
-                      {project.category}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={
-                        project.status === "Active"
-                          ? "border-green-400 text-green-400 px-3 py-1 rounded-full text-xs font-medium"
-                          : "border-cyan-400 text-cyan-400 px-3 py-1 rounded-full text-xs font-medium"
-                      }
+          {loading ? (
+            <div className="col-span-2 text-center text-white/70 py-12">Loading projects from IPFS...</div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="col-span-2 text-center text-white/70 py-12">No projects found.</div>
+          ) : (
+            filteredProjects.map((project, idx) => {
+              const category = project.metadata?.keyvalues?.category || "Other"
+              const color = project.metadata?.keyvalues?.color || "fuchsia"
+              const status = project.metadata?.keyvalues?.status || "Active"
+              const title = project.metadata?.name || project.name || `Project #${idx+1}`
+              const description = project.metadata?.keyvalues?.description || project.description || "No description."
+              const token = project.metadata?.keyvalues?.token || "$TOKEN"
+              const raised = Number(project.metadata?.keyvalues?.raised) || 0
+              const target = Number(project.metadata?.keyvalues?.target) || 1000000
+              const investors = Number(project.metadata?.keyvalues?.investors) || 0
+              const phase = project.metadata?.keyvalues?.phase || "Phase 1"
+              const roi = project.metadata?.keyvalues?.roi || "+0%"
+              const id = project.id || project.ipfs_pin_hash || idx
+              return (
+                <motion.div key={id} variants={item} whileHover={{ y: -5 }} className="h-full">
+                  <Link href={`/projects/${id}`} className="block h-full">
+                    <Card
+                      className={`h-full bg-white/5 backdrop-blur-lg border border-white/10 hover:border-${color}-500/50 rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-${color}-500/20`}
                     >
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <h3 className="text-white text-xl font-bold mb-2">{project.title}</h3>
-                  <p className="text-white/70 mb-4 line-clamp-2">{project.description}</p>
-
-                  <div className="flex justify-between items-center mb-4">
-                    <span className={`text-${project.color}-400 font-mono font-bold`}>{project.token}</span>
-                    <span className="text-green-400 font-bold">{project.roi}</span>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-white/70">Funding Progress</span>
-                      <span className="text-white">
-                        ${project.raised.toLocaleString()} / ${project.target.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="relative h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`absolute top-0 left-0 h-full bg-gradient-to-r from-${
-                          project.color
-                        }-500 to-${project.color}-400 rounded-full`}
-                        style={{ width: `${(project.raised / project.target) * 100}%` }}
-                      >
-                        <div
-                          className={`absolute top-0 left-0 h-full w-full bg-${project.color}-400 animate-pulse opacity-60`}
-                        />
+                      <div className="flex justify-between items-start mb-4">
+                        <Badge className={`bg-${color}-600 text-white px-3 py-1 rounded-full text-xs font-medium`}>
+                          {category}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={
+                            status === "Active"
+                              ? "border-green-400 text-green-400 px-3 py-1 rounded-full text-xs font-medium"
+                              : "border-cyan-400 text-cyan-400 px-3 py-1 rounded-full text-xs font-medium"
+                          }
+                        >
+                          {status}
+                        </Badge>
                       </div>
-                    </div>
-                  </div>
+                      <h3 className="text-white text-xl font-bold mb-2">{title}</h3>
+                      <p className="text-white/70 mb-4 line-clamp-2">{description}</p>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Users className={`h-4 w-4 text-${project.color}-400`} />
-                      <span className="text-white/70">{project.investors} investors</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className={`h-4 w-4 text-${project.color}-400`} />
-                      <span className="text-white/70">{project.phase}</span>
-                    </div>
-                  </div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className={`text-${color}-400 font-mono font-bold`}>{token}</span>
+                        <span className="text-green-400 font-bold">{roi}</span>
+                      </div>
 
-                  <Button
-                    className={`w-full bg-gradient-to-r from-${project.color}-600 to-${project.color}-500 hover:from-${project.color}-500 hover:to-${project.color}-400 text-white shadow-lg shadow-${project.color}-700/20 transition-all duration-300`}
-                  >
-                    View Project
-                  </Button>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/70">Funding Progress</span>
+                          <span className="text-white">
+                            ${raised.toLocaleString()} / ${target.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="relative h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`absolute top-0 left-0 h-full bg-gradient-to-r from-${color}-500 to-${color}-400 rounded-full`}
+                            style={{ width: `${(raised / target) * 100}%` }}
+                          >
+                            <div
+                              className={`absolute top-0 left-0 h-full w-full bg-${color}-400 animate-pulse opacity-60`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Users className={`h-4 w-4 text-${color}-400`} />
+                          <span className="text-white/70">{investors} investors</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Clock className={`h-4 w-4 text-${color}-400`} />
+                          <span className="text-white/70">{phase}</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        className={`w-full bg-gradient-to-r from-${color}-600 to-${color}-500 hover:from-${color}-500 hover:to-${color}-400 text-white shadow-lg shadow-${color}-700/20 transition-all duration-300`}
+                      >
+                        View Project
+                      </Button>
+                    </Card>
+                  </Link>
+                </motion.div>
+              )
+            })
+          )}
         </motion.div>
       </div>
     </div>

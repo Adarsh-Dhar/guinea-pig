@@ -185,6 +185,39 @@ export default function CreateProjectPage() {
         licenseTermsIds: response.licenseTermsIds,
         explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
       })
+
+      // 4. Persist to backend DB
+      try {
+        const dbRes = await fetch("/api/experiments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            description,
+            category,
+            tokenSymbol,
+            totalSupply,
+            totalFunding,
+            initialPrice,
+            licenseType,
+            royaltyRate,
+            nftContract,
+            tokenId,
+            creatorAddress: address,
+            ipfsMetadataHash: `0x${createHash("sha256").update(safeStringify(ipMetadata)).digest("hex")}`,
+            nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
+            milestones,
+            // Optionally, you can send licenses and documents if available
+          }),
+        })
+        console.log("db response", dbRes)
+        if (!dbRes.ok) {
+          const err = await dbRes.json()
+          setError(`DB Error: ${err.error || "Unknown error"}`)
+        }
+      } catch (dbErr: any) {
+        setError(`DB Error: ${dbErr?.message || dbErr}`)
+      }
     } catch (err: any) {
       setError(err?.message || "Unknown error during IP registration")
     } finally {
