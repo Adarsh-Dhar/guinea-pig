@@ -15,8 +15,9 @@ import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
 import { createHash } from "crypto"
-import { createCommercialRemixTerms, SPGNFTContractAddress } from "@/lib/story-utils"
+import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
+import { Address } from "viem"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -35,6 +36,65 @@ export default function CreateProjectPage() {
   const { isConnected, address } = useAccount()
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [attachLoading, setAttachLoading] = useState(false)
+  const [attachResult, setAttachResult] = useState<any>(null)
+  const [attachError, setAttachError] = useState<string | null>(null)
+  const [mintLoading, setMintLoading] = useState(false)
+  const [mintResult, setMintResult] = useState<any>(null)
+  const [mintError, setMintError] = useState<string | null>(null)
+  const [selectedLicense, setSelectedLicense] = useState<string>("open-academic")
+
+  // License templates (can be expanded)
+  const licenseTemplates = [
+    {
+      key: "open-academic",
+      label: "Open Academic",
+      desc: "Free for research, 10% commercial rev share",
+      terms: {
+        commercialUse: true,
+        commercialRevShare: 10,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: true,
+          dataSharingRequirement: "Open access after 24 months",
+          derivativeRoyaltyShare: 5,
+        },
+      },
+    },
+    {
+      key: "pharma-ready",
+      label: "Pharma Ready",
+      desc: "20% rev share + patent protection",
+      terms: {
+        commercialUse: true,
+        commercialRevShare: 20,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: false,
+          dataSharingRequirement: "Restricted",
+          derivativeRoyaltyShare: 10,
+        },
+      },
+    },
+    {
+      key: "dao-governance",
+      label: "DAO Governance",
+      desc: "Community votes on commercialization",
+      terms: {
+        commercialUse: true,
+        commercialRevShare: 15,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: true,
+          dataSharingRequirement: "DAO decides",
+          derivativeRoyaltyShare: 7,
+        },
+      },
+    },
+  ]
 
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", description: "", funding: "" }])
@@ -130,6 +190,95 @@ export default function CreateProjectPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleAttachTerms = async () => {
+    if (!result?.ipId) return
+    setAttachLoading(true)
+    setAttachResult(null)
+    setAttachError(null)
+    try {
+      // Find selected license template
+      const template = licenseTemplates.find(t => t.key === selectedLicense)
+      if (!template) throw new Error("License template not found")
+      // Compose license terms (expand as needed for your protocol)
+      const licenseTerms = {
+        defaultMintingFee: BigInt(0),
+        currency: "0x1514000000000000000000000000000000000000" as Address, // $WIP
+        royaltyPolicy: template.terms.commercialUse
+          ? RoyaltyPolicyLAP
+          : "0x0000000000000000000000000000000000000000" as `0x${string}`,
+        transferable: true,
+        expiration: BigInt(0),
+        commercialUse: template.terms.commercialUse,
+        commercialAttribution: true,
+        commercializerChecker: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+        commercializerCheckerData: "0x00" as `0x${string}`,
+        commercialRevShare: template.terms.commercialRevShare,
+        commercialRevCeiling: BigInt(0),
+        derivativesAllowed: template.terms.derivativesAllowed,
+        derivativesAttribution: template.terms.derivativesAttribution,
+        derivativesApproval: false,
+        derivativesReciprocal: true,
+        derivativeRevCeiling: BigInt(0),
+        uri: "",
+        // You can add additionalParams to the uri or a custom field if your backend supports it
+      }
+      // 1. Register the license terms
+      const regRes = await client.license.registerPILTerms({
+        ...licenseTerms,
+        txOptions: { waitForTransaction: true },
+      })
+      // 2. Attach the license terms to the IP
+      const attachRes = await client.license.attachLicenseTerms({
+        licenseTermsId: String(regRes.licenseTermsId),
+        ipId: result.ipId,
+        txOptions: { waitForTransaction: true },
+      })
+      setAttachResult({
+        txHash: attachRes.txHash,
+        licenseTermsId: regRes.licenseTermsId,
+        success: attachRes.success,
+      })
+    } catch (err: any) {
+      setAttachError(err?.message || "Unknown error attaching license terms")
+    } finally {
+      setAttachLoading(false)
+    }
+  }
+
+  const handleMintLicenseToken = async () => {
+    if (!result?.ipId || !attachResult?.licenseTermsId || !address) return
+    setMintLoading(true)
+    setMintResult(null)
+    setMintError(null)
+    try {
+      // Use the connected user's address as the receiver
+      const receiver = address
+      const response = await client.license.mintLicenseTokens({
+        licenseTermsId: String(attachResult.licenseTermsId),
+        licensorIpId: result.ipId,
+        receiver,
+        amount: 1,
+        maxMintingFee: BigInt(0),
+        maxRevenueShare: 100,
+        txOptions: { waitForTransaction: true },
+      })
+      setMintResult({
+        txHash: response.txHash,
+        licenseTokenIds: response.licenseTokenIds,
+      })
+    } catch (err: any) {
+      setMintError(err?.message || "Unknown error minting license token")
+    } finally {
+      setMintLoading(false)
+    }
+  }
+
+  function safeStringify(obj: any) {
+    return JSON.stringify(obj, (key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    )
   }
 
   return (
@@ -499,6 +648,71 @@ export default function CreateProjectPage() {
               >
                 View IP Details on Explorer
               </a>
+              {/* License Attachment UI */}
+              <div className="mt-6">
+                <div className="mb-2 text-white/80 font-semibold">Attach License Terms</div>
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                  {licenseTemplates.map(t => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-150 focus:outline-none ${selectedLicense === t.key ? 'bg-gradient-to-r from-fuchsia-600 to-cyan-600 text-white border-fuchsia-400' : 'bg-white/10 text-white/70 border-white/20 hover:border-fuchsia-400'}`}
+                      onClick={() => setSelectedLicense(t.key)}
+                      disabled={attachLoading}
+                    >
+                      <div>{t.label}</div>
+                      <div className="text-[10px] text-white/60">{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white"
+                  onClick={handleAttachTerms}
+                  disabled={attachLoading}
+                >
+                  {attachLoading ? "Attaching..." : "Attach Selected License Terms"}
+                </Button>
+                {attachResult && (
+                  <div className="mt-4 p-3 border border-blue-400/30 bg-blue-900/20 rounded-xl text-blue-200">
+                    <div className="font-semibold mb-1">License Terms Attached</div>
+                    <div className="text-xs mb-1">License Terms ID: {attachResult.licenseTermsId}</div>
+                    <div className="text-xs mb-1">Tx Hash: {attachResult.txHash}</div>
+                    <div className="text-xs mb-1">Status: {attachResult.success ? "Success" : "Already attached"}</div>
+                    {/* Mint License Token UI */}
+                    <Button
+                      type="button"
+                      className="mt-3 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                      onClick={handleMintLicenseToken}
+                      disabled={mintLoading || !address}
+                      variant="outline"
+                    >
+                      {mintLoading ? "Minting License Token..." : "Mint License Token to My Wallet"}
+                    </Button>
+                    {mintResult && (
+                      <div className="mt-3 p-2 border border-purple-400/30 bg-purple-900/20 rounded text-purple-200">
+                        <div className="font-semibold">License Token Minted</div>
+                        <div className="text-xs">Tx Hash: {mintResult.txHash}</div>
+                        <div className="text-xs">Token IDs: {safeStringify(mintResult.licenseTokenIds)}</div>
+                        <a
+                          href={`${networkInfo.blockExplorer}/tx/${mintResult.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 underline text-xs mt-1 inline-block"
+                        >
+                          View Transaction on Explorer
+                        </a>
+                      </div>
+                    )}
+                    {mintError && (
+                      <div className="mt-2 text-xs text-red-300">{mintError}</div>
+                    )}
+                  </div>
+                )}
+                {attachError && (
+                  <div className="mt-2 text-xs text-red-300">{attachError}</div>
+                )}
+              </div>
             </div>
           )}
           {error && (
