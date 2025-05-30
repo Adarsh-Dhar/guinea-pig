@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-import { useAccount } from "wagmi"
+import { useAccount, useWalletClient } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
 import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
@@ -40,6 +40,7 @@ export default function CreateProjectPage() {
   const [tokenId, setTokenId] = useState("")
   const [loading, setLoading] = useState(false)
   const { isConnected, address } = useAccount()
+  const { data: userWalletClient } = useWalletClient()
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [attachLoading, setAttachLoading] = useState(false)
@@ -118,6 +119,33 @@ export default function CreateProjectPage() {
     setMilestones(milestones.map((m, i) => i === index ? { ...m, [field]: value } : m))
   }
 
+  // Minimal test function for contract write
+  const testWrite = async () => {
+    if (!userWalletClient || !address) {
+      alert("Connect wallet first!")
+      return
+    }
+    try {
+      const txHash = await userWalletClient.writeContract({
+        address: tokenFactoryAddress as `0x${string}`,
+        abi: tokenFactoryAbi,
+        functionName: "createToken",
+        args: [
+          "TestProject",
+          "TST",
+          BigInt(1000000),
+          18,
+          BigInt(10000000),
+        ],
+        account: address as `0x${string}`,
+        chain: publicClient.chain,
+      })
+      alert("Success! Tx: " + txHash)
+    } catch (err: any) {
+      alert("Error: " + (err?.message || err))
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -149,8 +177,9 @@ export default function CreateProjectPage() {
       if (pricePerToken <= BigInt('0')) throw new Error("Price per token must be greater than 0")
 
       if (!address) throw new Error("Wallet address is required")
+      if (!userWalletClient) throw new Error("Wallet client not available. Please connect your wallet.")
 
-      const txHash = await walletClient.writeContract({
+      const txHash = await userWalletClient.writeContract({
         address: tokenFactoryAddress as `0x${string}`,
         abi: tokenFactoryAbi,
         functionName: "createToken",
@@ -162,7 +191,7 @@ export default function CreateProjectPage() {
           pricePerToken,
         ],
         account: address as `0x${string}`,
-        chain: publicClient.chain,
+        chain: userWalletClient.chain ?? networkInfo.chain,
       })
 
       console.log("txHash", txHash)
@@ -780,6 +809,14 @@ export default function CreateProjectPage() {
               disabled={!isConnected || loading}
             >
               {loading ? "Creating..." : "Create IP Asset & Launch Project"}
+            </Button>
+            <Button
+              type="button"
+              className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white ml-2"
+              onClick={testWrite}
+              disabled={!isConnected}
+            >
+              Test Minimal Token Creation
             </Button>
           </motion.div>
           {result && (
