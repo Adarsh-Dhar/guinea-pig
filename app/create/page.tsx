@@ -21,7 +21,7 @@ import { Address } from "viem"
 import { tokenFactoryAbi } from "@/lib/contract/abi/TokenFactory"
 import { contractAddress as tokenFactoryAddress } from "@/lib/contract/address"
 import { walletClient, publicClient } from "@/lib/config"
-import { decodeEventLog } from "viem"
+import { decodeEventLog, keccak256, toBytes } from "viem"
 import { parseUnits } from "viem/utils"
 import { sepolia } from "viem/chains"
 
@@ -149,24 +149,17 @@ export default function CreateProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setResult(null)
-    setError(null)
-    setTokenCreationLoading(true)
-    setTokenAddress(null)
     setTokenCreationError(null)
     try {
       // Validate symbol
       const cleanSymbol = tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase()
       if (!cleanSymbol) throw new Error("Token symbol must be alphanumeric and not empty")
-
       // Validate and parse supply
       const supply = BigInt(totalSupply.replace(/,/g, ""))
       if (supply <= BigInt('0')) throw new Error("Total supply must be greater than 0")
-
       // Validate and parse decimals
       const dec = Number(decimals)
       if (isNaN(dec) || dec < 0 || dec > 255) throw new Error("Decimals must be a valid number between 0 and 255")
-
       // Convert price to wei
       let pricePerToken: bigint
       try {
@@ -175,10 +168,8 @@ export default function CreateProjectPage() {
         throw new Error("Initial price must be a valid number")
       }
       if (pricePerToken <= BigInt('0')) throw new Error("Price per token must be greater than 0")
-
       if (!address) throw new Error("Wallet address is required")
       if (!userWalletClient) throw new Error("Wallet client not available. Please connect your wallet.")
-
       const txHash = await userWalletClient.writeContract({
         address: tokenFactoryAddress as `0x${string}`,
         abi: tokenFactoryAbi,
@@ -191,165 +182,13 @@ export default function CreateProjectPage() {
           pricePerToken,
         ],
         account: address as `0x${string}`,
-        chain: userWalletClient.chain ?? networkInfo.chain,
+        chain: publicClient.chain,
       })
-
-      console.log("txHash", txHash)
-      // Wait for transaction to be mined
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-      console.log("receipt", receipt)
-      // Find TokenCreated event
-      const logs = receipt.logs
-      console.log("logs", logs)
-      const tokenCreatedLog = logs.find(
-        (log) => log.topics[0] ===
-          "0x7e1b7e7e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
-      )
-      // If not found, fallback to reading from contract
-      let newTokenAddress = null
-      if (tokenCreatedLog) {
-        // decode log
-        const decoded = decodeEventLog({
-          abi: tokenFactoryAbi,
-          eventName: "TokenCreated",
-          data: tokenCreatedLog.data,
-          topics: tokenCreatedLog.topics,
-        })
-        newTokenAddress = (decoded.args as any).tokenAddress
-      } else {
-        // fallback: get total tokens and fetch last
-        const total = await publicClient.readContract({
-          address: tokenFactoryAddress as `0x${string}`,
-          abi: tokenFactoryAbi,
-          functionName: "getTotalTokensCreated",
-        })
-        let last = null
-        if (typeof total === "bigint" && total > BigInt(0)) {
-          last = await publicClient.readContract({
-            address: tokenFactoryAddress as `0x${string}`,
-            abi: tokenFactoryAbi,
-            functionName: "getTokenByIndex",
-            args: [total - BigInt(1)],
-          })
-        }
-        newTokenAddress = last ? (last as any).tokenAddress : null
-      }
-      setTokenAddress(newTokenAddress)
-      setTokenCreationLoading(false)
-
-      // 1. Persist to backend DB (before IPFS)
-      let dbRes: Response | null = null
-      try {
-        dbRes = await fetch("/api/experiments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            description,
-            category,
-            tokenSymbol,
-            totalSupply,
-            totalFunding,
-            initialPrice,
-            licenseType,
-            royaltyRate,
-            nftContract,
-            tokenId,
-            creatorAddress: address,
-            milestones,
-            tokenAddress: newTokenAddress,
-            // Optionally, you can send licenses and documents if available
-          }),
-        })
-        console.log("DB response", dbRes)
-        if (!dbRes.ok) {
-          const err = await dbRes.json()
-          setError(`DB Error: ${err.error || "Unknown error"}`)
-          setLoading(false)
-          return
-        }
-      } catch (dbErr: any) {
-        setError(`DB Error: ${dbErr?.message || dbErr}`)
-        setLoading(false)
-        return
-      }
-
-      // 2. Only if DB is successful, proceed to IPFS/registration
-      // Compose metadata
-      const projectName = title
-      const ipMetadata = client.ipAsset.generateIpMetadata({
-        title: projectName,
-        description: description + "\n\n---\nMilestones:\n" + milestones.map((m, i) => `Milestone ${i+1}: ${m.title}\nFunding: ${m.funding}\n${m.description}`).join("\n\n"),
-        createdAt: Math.floor(Date.now() / 1000).toString(),
-        creators: [
-          {
-            name: address || "" as `0x${string}`,
-            address: address || "" as `0x${string}`,
-            contributionPercent: 100,
-          },
-        ],
-        image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
-        imageHash: "" as `0x${string}`,
-        mediaUrl: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
-        mediaHash: "" as `0x${string}`,
-        mediaType: "image/png",
-        attributes: [
-          { key: "Category", value: category },
-          { key: "Token Symbol", value: tokenSymbol },
-          { key: "Total Supply", value: totalSupply },
-          { key: "Total Funding", value: totalFunding },
-          { key: "Initial Price", value: initialPrice },
-          { key: "License Type", value: licenseType },
-          { key: "Royalty Rate", value: royaltyRate },
-        ],
-      })
-      const nftMetadata = {
-        name: `${projectName} - IP Rights`,
-        description: `NFT representing IP rights to ${projectName} and future royalties`,
-        image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
-        external_url: "https://pump.science/projects/" + projectName.replace(/\s+/g, "-").toLowerCase(),
-        attributes: [
-          { key: "Funding Target", value: totalFunding },
-          { key: "Initial Token Price", value: initialPrice },
-          ...milestones.map((m, i) => ({ key: `Milestone ${i+1}`, value: m.title })),
-          { key: "Royalty Rate", value: royaltyRate },
-        ],
-      }
-      // 3. Upload to IPFS
-      const safeStringify = (obj: any) => JSON.stringify(obj, (key, value) => typeof value === "bigint" ? value.toString() : value)
-      const [ipIpfsHash, nftIpfsHash] = await Promise.all([
-        uploadJSONToIPFS(ipMetadata),
-        uploadJSONToIPFS(nftMetadata)
-      ])
-      // 4. Register IP Asset
-      const response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-        spgNftContract: SPGNFTContractAddress,
-        licenseTermsData: [
-          {
-            terms: createCommercialRemixTerms({
-              defaultMintingFee: Number(initialPrice) || 0.5,
-              commercialRevShare: Number(royaltyRate) || 15,
-            }),
-          },
-        ],
-        ipMetadata: {
-          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-          ipMetadataHash: `0x${createHash("sha256").update(safeStringify(ipMetadata)).digest("hex")}`,
-          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-          nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
-        },
-        txOptions: { waitForTransaction: true },
-      })
-      console.log("IPFS/Registration response", response)
-      setResult({
-        txHash: response.txHash,
-        ipId: response.ipId,
-        licenseTermsIds: response.licenseTermsIds,
-        explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
-      })
+      alert("Success! Tx: " + txHash)
+      setLoading(false)
+      return
     } catch (err: any) {
-      setTokenCreationError(err?.message || "Unknown error during token creation")
-      setTokenCreationLoading(false)
+      alert("Error: " + (err?.message || err))
       setLoading(false)
       return
     }
@@ -810,29 +649,21 @@ export default function CreateProjectPage() {
             >
               {loading ? "Creating..." : "Create IP Asset & Launch Project"}
             </Button>
-            <Button
-              type="button"
-              className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white ml-2"
-              onClick={testWrite}
-              disabled={!isConnected}
-            >
-              Test Minimal Token Creation
-            </Button>
           </motion.div>
           {result && (
             <div className="mt-8 p-4 border border-green-400/30 bg-green-900/20 rounded-xl text-green-200">
               <h3 className="font-bold text-green-300 mb-2">Research Project Registered!</h3>
               <div className="text-sm mb-2">
                 <span className="font-medium">IP Asset ID:</span>
-                <span className="ml-2 break-words">{result.ipId}</span>
+                <span className="ml-2 break-words">{result.txHash}</span>
               </div>
               <a
-                href={result.explorer}
+                href={`${networkInfo.blockExplorer}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 underline text-xs"
               >
-                View IP Details on Explorer
+                View Transaction on Explorer
               </a>
               {/* License Attachment UI */}
               <div className="mt-6">
