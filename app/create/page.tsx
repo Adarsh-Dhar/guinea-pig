@@ -185,6 +185,42 @@ export default function CreateProjectPage() {
         chain: publicClient.chain,
       })
       alert("Success! Tx: " + txHash)
+      // Add project to DB
+      try {
+        const res = await fetch("/api/experiments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            description,
+            category,
+            tokenSymbol: cleanSymbol,
+            totalSupply,
+            totalFunding,
+            initialPrice,
+            licenseType,
+            royaltyRate,
+            nftContract,
+            tokenId,
+            creatorAddress: address,
+            ipfsMetadataHash: "",
+            nftMetadataHash: "",
+            milestones,
+            licenses: [],
+            documents: [],
+          }),
+        })
+        if (!res.ok) {
+          const errData = await res.json()
+          setError(errData.error || "Failed to add project to DB")
+        } else {
+          const data = await res.json()
+          console.log('Created experiment in DB:', data.project)
+          setResult(data.project)
+        }
+      } catch (dbErr: any) {
+        setError(dbErr?.message || "Failed to add project to DB")
+      }
       setLoading(false)
       return
     } catch (err: any) {
