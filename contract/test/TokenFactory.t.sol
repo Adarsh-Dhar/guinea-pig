@@ -22,7 +22,8 @@ contract TokenFactoryTest is Test {
             "Test Token",
             "TEST",
             1000000,
-            18
+            18,
+            1000000000000000 // 0.001 ETH per token
         );
         
         assertTrue(tokenAddress != address(0));
@@ -31,8 +32,10 @@ contract TokenFactoryTest is Test {
         assertEq(token.name(), "Test Token");
         assertEq(token.symbol(), "TEST");
         assertEq(token.totalSupply(), 1000000 * 10**18);
-        assertEq(token.balanceOf(user1), 1000000 * 10**18);
+        assertEq(token.balanceOf(address(token)), 1000000 * 10**18); // Tokens are in contract
+        assertEq(token.tokenPrice(), 1000000000000000);
         assertEq(token.owner(), user1);
+        assertTrue(token.saleActive());
         
         vm.stopPrank();
     }
@@ -40,69 +43,201 @@ contract TokenFactoryTest is Test {
     function testCreateMultipleTokens() public {
         vm.startPrank(user1);
         
-        factory.createToken("Token A", "TKA", 500000, 18);
-        factory.createToken("Token B", "TKB", 200000, 6);
+        factory.createToken("Token A", "TKA", 500000, 18, 2000000000000000);
+        factory.createToken("Token B", "TKB", 200000, 6, 5000000000000000);
         
         TokenFactory.TokenInfo[] memory userTokens = factory.getTokensByOwner(user1);
         assertEq(userTokens.length, 2);
         assertEq(userTokens[0].symbol, "TKA");
         assertEq(userTokens[1].symbol, "TKB");
+        assertEq(userTokens[0].tokenPrice, 2000000000000000);
+        assertEq(userTokens[1].tokenPrice, 5000000000000000);
         
         vm.stopPrank();
     }
     
     function testFailEmptyName() public {
-        factory.createToken("", "TEST", 1000, 18);
+        factory.createToken("", "TEST", 1000, 18, 1000000000000000);
     }
     
     function testFailEmptySymbol() public {
-        factory.createToken("Test", "", 1000, 18);
+        factory.createToken("Test", "", 1000, 18, 1000000000000000);
     }
     
     function testFailZeroSupply() public {
-        factory.createToken("Test", "TEST", 0, 18);
+        factory.createToken("Test", "TEST", 0, 18, 1000000000000000);
     }
     
-    function testTokenOwnership() public {
+    function testFailZeroPrice() public {
+        factory.createToken("Test", "TEST", 1000, 18, 0);
+    }
+    
+    function testBuyTokens() public {
         vm.startPrank(user1);
         
-        address tokenAddress = factory.createToken("Owner Test", "OWN", 1000, 18);
+        address tokenAddress = factory.createToken(
+            "Buyable Token",
+            "BUY",
+            1000,
+            18,
+            1000000000000000 // 0.001 ETH per token
+        );
+        
         CustomERC20Token token = CustomERC20Token(tokenAddress);
-        
-        // Owner can mint
-        token.mint(user2, 500 * 10**18);
-        assertEq(token.balanceOf(user2), 500 * 10**18);
-        
-        // Owner can burn
-        token.burn(100 * 10**18);
-        assertEq(token.balanceOf(user1), (1000 * 10**18) - (100 * 10**18));
-        
         vm.stopPrank();
         
-        // Non-owner cannot mint
+        // Give user2 some ETH
+        vm.deal(user2, 10 ether);
+        
         vm.startPrank(user2);
-        vm.expectRevert();
-        token.mint(user2, 100 * 10**18);
+        
+        // Buy 100 tokens
+        uint256 tokensToBuy = 100;
+        uint256 cost = token.getCost(tokensToBuy);
+        assertEq(cost, 100000000000000000); // 0.1 ETH
+        
+        uint256 initialBalance = token.balanceOf(user2);
+        token.buyTokens{value: cost}(tokensToBuy);
+        
+        assertEq(token.balanceOf(user2), initialBalance + (tokensToBuy * 10**18));
+        assertEq(address(token).balance, cost);
+        
         vm.stopPrank();
     }
     
-    function testFactoryStats() public {
-        assertEq(factory.getTotalTokensCreated(), 0);
+    function testBuyTokensWithExcessETH() public {
+        vm.startPrank(user1);
         
-        vm.prank(user1);
-        factory.createToken("Token 1", "TK1", 1000, 18);
+        address tokenAddress = factory.createToken(
+            "Refund Token",
+            "REF",
+            1000,
+            18,
+            1000000000000000
+        );
         
-        vm.prank(user2);
-        factory.createToken("Token 2", "TK2", 2000, 18);
+        CustomERC20Token token = CustomERC20Token(tokenAddress);
+        vm.stopPrank();
         
-        assertEq(factory.getTotalTokensCreated(), 2);
+        vm.deal(user2, 10 ether);
+        vm.startPrank(user2);
         
-        TokenFactory.TokenInfo memory token1 = factory.getTokenByIndex(0);
-        assertEq(token1.symbol, "TK1");
-        assertEq(token1.owner, user1);
+        uint256 initialETHBalance = user2.balance;
+        uint256 tokensToBuy = 50;
+        uint256 cost = token.getCost(tokensToBuy);
+        uint256 excessETH = 1 ether;
         
-        TokenFactory.TokenInfo memory token2 = factory.getTokenByIndex(1);
-        assertEq(token2.symbol, "TK2");
-        assertEq(token2.owner, user2);
+        token.buyTokens{value: cost + excessETH}(tokensToBuy);
+        
+        // Should refund excess ETH
+        assertEq(user2.balance, initialETHBalance - cost);
+        assertEq(token.balanceOf(user2), tokensToBuy * 10**18);
+        
+        vm.stopPrank();
+    }
+    
+    function testFailBuyTokensInsufficientETH() public {
+        vm.startPrank(user1);
+        
+        address tokenAddress = factory.createToken(
+            "Expensive Token",
+            "EXP",
+            1000,
+            18,
+            1000000000000000
+        );
+        
+        CustomERC20Token token = CustomERC20Token(tokenAddress);
+        vm.stopPrank();
+        
+        vm.deal(user2, 0.01 ether);
+        vm.startPrank(user2);
+        
+        // Try to buy 100 tokens with insufficient ETH
+        token.buyTokens{value: 0.01 ether}(100);
+        
+        vm.stopPrank();
+    }
+    
+    function testFailBuyTokensWhenSaleInactive() public {
+        vm.startPrank(user1);
+        
+        address tokenAddress = factory.createToken(
+            "Inactive Token",
+            "INAC",
+            1000,
+            18,
+            1000000000000000
+        );
+        
+        CustomERC20Token token = CustomERC20Token(tokenAddress);
+        token.setSaleActive(false);
+        vm.stopPrank();
+        
+        vm.deal(user2, 1 ether);
+        vm.startPrank(user2);
+        
+        token.buyTokens{value: 0.1 ether}(100);
+        
+        vm.stopPrank();
+    }
+    
+    function testTokenManagement() public {
+        vm.startPrank(user1);
+        
+        address tokenAddress = factory.createToken(
+            "Management Token",
+            "MGT",
+            1000,
+            18,
+            1000000000000000
+        );
+        
+        CustomERC20Token token = CustomERC20Token(tokenAddress);
+        
+        // Test price update
+        token.setTokenPrice(2000000000000000);
+        assertEq(token.tokenPrice(), 2000000000000000);
+        
+        // Test withdrawing unsold tokens
+        uint256 initialContractBalance = token.balanceOf(address(token));
+        token.withdrawUnsoldTokens(100);
+        assertEq(token.balanceOf(address(token)), initialContractBalance - (100 * 10**18));
+        assertEq(token.balanceOf(user1), 100 * 10**18);
+        
+        // Test minting for sale
+        token.mintForSale(200);
+        assertEq(token.balanceOf(address(token)), initialContractBalance - (100 * 10**18) + (200 * 10**18));
+        
+        vm.stopPrank();
+    }
+    
+    function testWithdrawFunds() public {
+        vm.startPrank(user1);
+        
+        address tokenAddress = factory.createToken(
+            "Withdraw Token",
+            "WITH",
+            1000,
+            18,
+            1000000000000000
+        );
+        
+        CustomERC20Token token = CustomERC20Token(tokenAddress);
+        vm.stopPrank();
+        
+        // User2 buys tokens
+        vm.deal(user2, 1 ether);
+        vm.startPrank(user2);
+        token.buyTokens{value: 0.1 ether}(100);
+        vm.stopPrank();
+        
+        // Owner withdraws funds
+        vm.startPrank(user1);
+        uint256 initialBalance = user1.balance;
+        token.withdrawFunds();
+        assertEq(user1.balance, initialBalance + 0.1 ether);
+        assertEq(address(token).balance, 0);
+        vm.stopPrank();
     }
 }

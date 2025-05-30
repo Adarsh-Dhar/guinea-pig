@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import { WagmiProvider, createConfig, http } from "wagmi"
-import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains"
+import { mainnet, polygon, optimism, arbitrum, base, storyAeneid } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider, getDefaultConfig } from "connectkit"
 
@@ -19,6 +19,7 @@ const config = createConfig(
       [optimism.id]: http(`https://opt-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
       [arbitrum.id]: http(`https://arb-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
       [base.id]: http(`https://base-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
+      [storyAeneid.id]: http(`https://aeneid.storyrpc.io`),
     },
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "",
     appName: "PUMP.SCIENCE",

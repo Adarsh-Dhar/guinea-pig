@@ -18,6 +18,12 @@ import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 import { Address } from "viem"
+import { tokenFactoryAbi } from "@/lib/contract/abi/TokenFactory"
+import { contractAddress as tokenFactoryAddress } from "@/lib/contract/address"
+import { walletClient, publicClient } from "@/lib/config"
+import { decodeEventLog } from "viem"
+import { parseUnits } from "viem/utils"
+import { sepolia } from "viem/chains"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -43,6 +49,10 @@ export default function CreateProjectPage() {
   const [mintResult, setMintResult] = useState<any>(null)
   const [mintError, setMintError] = useState<string | null>(null)
   const [selectedLicense, setSelectedLicense] = useState<string>("open-academic")
+  const [tokenCreationLoading, setTokenCreationLoading] = useState(false)
+  const [tokenAddress, setTokenAddress] = useState<string | null>(null)
+  const [tokenCreationError, setTokenCreationError] = useState<string | null>(null)
+  const [decimals, setDecimals] = useState("18")
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -113,8 +123,130 @@ export default function CreateProjectPage() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setTokenCreationLoading(true)
+    setTokenAddress(null)
+    setTokenCreationError(null)
     try {
-      // 1. Compose metadata
+      // Validate symbol
+      const cleanSymbol = tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase()
+      if (!cleanSymbol) throw new Error("Token symbol must be alphanumeric and not empty")
+
+      // Validate and parse supply
+      const supply = BigInt(totalSupply.replace(/,/g, ""))
+      if (supply <= BigInt('0')) throw new Error("Total supply must be greater than 0")
+
+      // Validate and parse decimals
+      const dec = Number(decimals)
+      if (isNaN(dec) || dec < 0 || dec > 255) throw new Error("Decimals must be a valid number between 0 and 255")
+
+      // Convert price to wei
+      let pricePerToken: bigint
+      try {
+        pricePerToken = parseUnits(initialPrice, dec)
+      } catch {
+        throw new Error("Initial price must be a valid number")
+      }
+      if (pricePerToken <= BigInt('0')) throw new Error("Price per token must be greater than 0")
+
+      if (!address) throw new Error("Wallet address is required")
+
+      const txHash = await walletClient.writeContract({
+        address: tokenFactoryAddress as `0x${string}`,
+        abi: tokenFactoryAbi,
+        functionName: "createToken",
+        args: [
+          title || "ResearchToken",
+          cleanSymbol,
+          supply,
+          dec,
+          pricePerToken,
+        ],
+        account: address as `0x${string}`,
+        chain: publicClient.chain,
+      })
+
+      console.log("txHash", txHash)
+      // Wait for transaction to be mined
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      console.log("receipt", receipt)
+      // Find TokenCreated event
+      const logs = receipt.logs
+      console.log("logs", logs)
+      const tokenCreatedLog = logs.find(
+        (log) => log.topics[0] ===
+          "0x7e1b7e7e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+      )
+      // If not found, fallback to reading from contract
+      let newTokenAddress = null
+      if (tokenCreatedLog) {
+        // decode log
+        const decoded = decodeEventLog({
+          abi: tokenFactoryAbi,
+          eventName: "TokenCreated",
+          data: tokenCreatedLog.data,
+          topics: tokenCreatedLog.topics,
+        })
+        newTokenAddress = (decoded.args as any).tokenAddress
+      } else {
+        // fallback: get total tokens and fetch last
+        const total = await publicClient.readContract({
+          address: tokenFactoryAddress as `0x${string}`,
+          abi: tokenFactoryAbi,
+          functionName: "getTotalTokensCreated",
+        })
+        let last = null
+        if (typeof total === "bigint" && total > BigInt(0)) {
+          last = await publicClient.readContract({
+            address: tokenFactoryAddress as `0x${string}`,
+            abi: tokenFactoryAbi,
+            functionName: "getTokenByIndex",
+            args: [total - BigInt(1)],
+          })
+        }
+        newTokenAddress = last ? (last as any).tokenAddress : null
+      }
+      setTokenAddress(newTokenAddress)
+      setTokenCreationLoading(false)
+
+      // 1. Persist to backend DB (before IPFS)
+      let dbRes: Response | null = null
+      try {
+        dbRes = await fetch("/api/experiments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            description,
+            category,
+            tokenSymbol,
+            totalSupply,
+            totalFunding,
+            initialPrice,
+            licenseType,
+            royaltyRate,
+            nftContract,
+            tokenId,
+            creatorAddress: address,
+            milestones,
+            tokenAddress: newTokenAddress,
+            // Optionally, you can send licenses and documents if available
+          }),
+        })
+        console.log("DB response", dbRes)
+        if (!dbRes.ok) {
+          const err = await dbRes.json()
+          setError(`DB Error: ${err.error || "Unknown error"}`)
+          setLoading(false)
+          return
+        }
+      } catch (dbErr: any) {
+        setError(`DB Error: ${dbErr?.message || dbErr}`)
+        setLoading(false)
+        return
+      }
+
+      // 2. Only if DB is successful, proceed to IPFS/registration
+      // Compose metadata
       const projectName = title
       const ipMetadata = client.ipAsset.generateIpMetadata({
         title: projectName,
@@ -154,13 +286,13 @@ export default function CreateProjectPage() {
           { key: "Royalty Rate", value: royaltyRate },
         ],
       }
-      // 2. Upload to IPFS
+      // 3. Upload to IPFS
       const safeStringify = (obj: any) => JSON.stringify(obj, (key, value) => typeof value === "bigint" ? value.toString() : value)
       const [ipIpfsHash, nftIpfsHash] = await Promise.all([
         uploadJSONToIPFS(ipMetadata),
         uploadJSONToIPFS(nftMetadata)
       ])
-      // 3. Register IP Asset
+      // 4. Register IP Asset
       const response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
         spgNftContract: SPGNFTContractAddress,
         licenseTermsData: [
@@ -179,49 +311,18 @@ export default function CreateProjectPage() {
         },
         txOptions: { waitForTransaction: true },
       })
+      console.log("IPFS/Registration response", response)
       setResult({
         txHash: response.txHash,
         ipId: response.ipId,
         licenseTermsIds: response.licenseTermsIds,
         explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
       })
-
-      // 4. Persist to backend DB
-      try {
-        const dbRes = await fetch("/api/experiments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            description,
-            category,
-            tokenSymbol,
-            totalSupply,
-            totalFunding,
-            initialPrice,
-            licenseType,
-            royaltyRate,
-            nftContract,
-            tokenId,
-            creatorAddress: address,
-            ipfsMetadataHash: `0x${createHash("sha256").update(safeStringify(ipMetadata)).digest("hex")}`,
-            nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
-            milestones,
-            // Optionally, you can send licenses and documents if available
-          }),
-        })
-        console.log("db response", dbRes)
-        if (!dbRes.ok) {
-          const err = await dbRes.json()
-          setError(`DB Error: ${err.error || "Unknown error"}`)
-        }
-      } catch (dbErr: any) {
-        setError(`DB Error: ${dbErr?.message || dbErr}`)
-      }
     } catch (err: any) {
-      setError(err?.message || "Unknown error during IP registration")
-    } finally {
+      setTokenCreationError(err?.message || "Unknown error during token creation")
+      setTokenCreationLoading(false)
       setLoading(false)
+      return
     }
   }
 
@@ -463,10 +564,12 @@ export default function CreateProjectPage() {
                   </Label>
                   <Input
                     id="token-symbol"
-                    placeholder="e.g., $LONGEVITY"
+                    placeholder="e.g., LONGEVITY"
+                    pattern="[A-Z0-9]{1,10}"
+                    title="Token symbol should be 1-10 uppercase letters or numbers"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
                     value={tokenSymbol}
-                    onChange={e => setTokenSymbol(e.target.value)}
+                    onChange={e => setTokenSymbol(e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase())}
                   />
                 </div>
                 <div className="space-y-2">
@@ -481,6 +584,19 @@ export default function CreateProjectPage() {
                     onChange={e => setTotalSupply(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="decimals" className="text-white/80">
+                  Decimals
+                </Label>
+                <Input
+                  id="decimals"
+                  placeholder="18"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                  value={decimals}
+                  onChange={e => setDecimals(e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -751,6 +867,20 @@ export default function CreateProjectPage() {
           {error && (
             <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
               <span className="font-semibold">Error:</span> {error}
+            </div>
+          )}
+          {tokenCreationLoading && (
+            <div className="mt-4 text-fuchsia-300">Creating token onchain...</div>
+          )}
+          {tokenAddress && (
+            <div className="mt-4 p-4 border border-fuchsia-400/30 bg-fuchsia-900/20 rounded-xl text-fuchsia-200">
+              <div className="font-bold">Token Created!</div>
+              <div className="text-xs break-all">Address: {tokenAddress}</div>
+            </div>
+          )}
+          {tokenCreationError && (
+            <div className="mt-4 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+              <span className="font-semibold">Token Creation Error:</span> {tokenCreationError}
             </div>
           )}
         </motion.form>
