@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, Upload, Plus, X, Sparkles } from "lucide-react"
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-import { useAccount, useWalletClient } from "wagmi"
+import { useAccount, useWalletClient, useWriteContract, useWaitForTransactionReceipt, useConnect } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
 import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
@@ -24,6 +24,7 @@ import { walletClient, publicClient } from "@/lib/config"
 import { decodeEventLog, keccak256, toBytes } from "viem"
 import { parseUnits } from "viem/utils"
 import { sepolia } from "viem/chains"
+import { injected } from 'wagmi/connectors'
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -54,6 +55,16 @@ export default function CreateProjectPage() {
   const [tokenAddress, setTokenAddress] = useState<string | null>(null)
   const [tokenCreationError, setTokenCreationError] = useState<string | null>(null)
   const [decimals, setDecimals] = useState("18")
+  const { connect } = useConnect()
+  const {
+    writeContract,
+    isPending: isWritePending,
+    isError: isWriteError,
+    error: writeError,
+    data: txHash,
+    reset: resetWrite,
+  } = useWriteContract()
+  const { data: receipt, isSuccess: isReceiptSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -119,47 +130,26 @@ export default function CreateProjectPage() {
     setMilestones(milestones.map((m, i) => i === index ? { ...m, [field]: value } : m))
   }
 
-  // Minimal test function for contract write
-  const testWrite = async () => {
-    if (!userWalletClient || !address) {
-      alert("Connect wallet first!")
-      return
-    }
-    try {
-      const txHash = await userWalletClient.writeContract({
-        address: tokenFactoryAddress as `0x${string}`,
-        abi: tokenFactoryAbi,
-        functionName: "createToken",
-        args: [
-          "TestProject",
-          "TST",
-          BigInt(1000000),
-          18,
-          BigInt(10000000),
-        ],
-        account: address as `0x${string}`,
-        chain: publicClient.chain,
-      })
-      alert("Success! Tx: " + txHash)
-    } catch (err: any) {
-      alert("Error: " + (err?.message || err))
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setTokenCreationError(null)
+    setError(null)
+    setResult(null)
+    setTokenAddress(null)
+    resetWrite()
+
     try {
       // Validate symbol
       const cleanSymbol = tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase()
       if (!cleanSymbol) throw new Error("Token symbol must be alphanumeric and not empty")
+      
       // Validate and parse supply
       const supply = BigInt(totalSupply.replace(/,/g, ""))
       if (supply <= BigInt('0')) throw new Error("Total supply must be greater than 0")
+      
       // Validate and parse decimals
       const dec = Number(decimals)
       if (isNaN(dec) || dec < 0 || dec > 255) throw new Error("Decimals must be a valid number between 0 and 255")
+      
       // Convert price to wei
       let pricePerToken: bigint
       try {
@@ -168,11 +158,13 @@ export default function CreateProjectPage() {
         throw new Error("Initial price must be a valid number")
       }
       if (pricePerToken <= BigInt('0')) throw new Error("Price per token must be greater than 0")
+      
       if (!address) throw new Error("Wallet address is required")
-      if (!userWalletClient) throw new Error("Wallet client not available. Please connect your wallet.")
-      const txHash = await userWalletClient.writeContract({
-        address: tokenFactoryAddress as `0x${string}`,
+      
+      // Call contract
+      writeContract({
         abi: tokenFactoryAbi,
+        address: tokenFactoryAddress as `0x${string}`,
         functionName: "createToken",
         args: [
           title || "ResearchToken",
@@ -182,53 +174,88 @@ export default function CreateProjectPage() {
           pricePerToken,
         ],
         account: address as `0x${string}`,
-        chain: publicClient.chain,
       })
-      alert("Success! Tx: " + txHash)
-      // Add project to DB
-      try {
-        const res = await fetch("/api/experiments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            description,
-            category,
-            tokenSymbol: cleanSymbol,
-            totalSupply,
-            totalFunding,
-            initialPrice,
-            licenseType,
-            royaltyRate,
-            nftContract,
-            tokenId,
-            creatorAddress: address,
-            ipfsMetadataHash: "",
-            nftMetadataHash: "",
-            milestones,
-            licenses: [],
-            documents: [],
-          }),
-        })
-        if (!res.ok) {
-          const errData = await res.json()
-          setError(errData.error || "Failed to add project to DB")
-        } else {
-          const data = await res.json()
-          console.log('Created experiment in DB:', data.project)
-          setResult(data.project)
-        }
-      } catch (dbErr: any) {
-        setError(dbErr?.message || "Failed to add project to DB")
-      }
-      setLoading(false)
-      return
+      console.log("txHash", txHash)
     } catch (err: any) {
-      alert("Error: " + (err?.message || err))
-      setLoading(false)
-      return
+      setError(err?.message || "Failed to create token")
     }
   }
+
+  useEffect(() => {
+    if (receipt) {
+      console.log("receipt", receipt)
+      try {
+        const eventLog = receipt.logs.find(log => {
+          try {
+            const decoded = decodeEventLog({
+              abi: tokenFactoryAbi,
+              data: log.data,
+              topics: log.topics,
+            })
+            return decoded.eventName === 'TokenCreated'
+          } catch {
+            return false
+          }
+        })
+        if (eventLog) {
+          const event = decodeEventLog({
+            abi: tokenFactoryAbi,
+            data: eventLog.data,
+            topics: eventLog.topics,
+          })
+          // event.args should be an object, but add a type guard
+          const args = event && typeof event === 'object' && 'args' in event ? event.args as Record<string, any> : undefined;
+          const tokenAddress = args?.tokenAddress;
+          console.log("tokenAddress", tokenAddress)
+          if (tokenAddress) {
+            // setTokenAddress(tokenAddress)
+            // Add project to DB
+            (async () => {
+              try {
+                const res = await fetch("/api/experiments", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    title,
+                    description,
+                    category,
+                    tokenSymbol: tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase(),
+                    totalSupply,
+                    totalFunding,
+                    initialPrice,
+                    licenseType,
+                    royaltyRate,
+                    nftContract,
+                    tokenId,
+                    creatorAddress: address,
+                    tokenAddress,
+                    ipfsMetadataHash: "",
+                    nftMetadataHash: "",
+                    milestones,
+                    licenses: [],
+                    documents: [],
+                  }),
+                });
+                if (!res.ok) {
+                  const errData = await res.json();
+                  setError(errData.error || "Failed to add project to DB");
+                } else {
+                  const data = await res.json();
+                  setResult(data.project);
+                }
+              } catch (dbErr: any) {
+                setError(dbErr?.message || "Failed to add project to DB");
+              }
+            })();
+          } else {
+            setError("Failed to extract token address from event log")
+          }
+        }
+      } catch (err) {
+        setError("Failed to decode TokenCreated event")
+      }
+    }
+  }, [receipt])
 
   const handleAttachTerms = async () => {
     if (!result?.ipId) return
@@ -681,9 +708,14 @@ export default function CreateProjectPage() {
             <Button
               type="submit"
               className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20"
-              disabled={!isConnected || loading}
+              disabled={!isConnected || isWritePending}
+              onClick={!isConnected ? () => connect({ connector: injected() }) : undefined}
             >
-              {loading ? "Creating..." : "Create IP Asset & Launch Project"}
+              {!isConnected
+                ? "Connect Wallet"
+                : isWritePending
+                  ? "Creating..."
+                  : "Create IP Asset & Launch Project"}
             </Button>
           </motion.div>
           {result && (
