@@ -43,7 +43,7 @@ export default function CreateProjectPage() {
   const { isConnected, address } = useAccount()
   const { data: userWalletClient } = useWalletClient()
   const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [attachLoading, setAttachLoading] = useState(false)
   const [attachResult, setAttachResult] = useState<any>(null)
   const [attachError, setAttachError] = useState<string | null>(null)
@@ -58,10 +58,11 @@ export default function CreateProjectPage() {
   const { connect } = useConnect()
   const {
     writeContract,
-    isPending: isWritePending,
-    isError: isWriteError,
-    error: writeError,
     data: txHash,
+    isPending,
+    isSuccess,
+    isError,
+    error: txError,
     reset: resetWrite,
   } = useWriteContract()
   const { data: receipt, isSuccess: isReceiptSuccess } = useWaitForTransactionReceipt({ hash: txHash })
@@ -118,6 +119,15 @@ export default function CreateProjectPage() {
     },
   ]
 
+  // Replace individual token states with formData
+  const [formData, setFormData] = useState({
+    name: "",
+    symbol: "",
+    initialSupply: "",
+    decimals: "18",
+    pricePerToken: "",
+  });
+
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", description: "", funding: "" }])
   }
@@ -130,132 +140,31 @@ export default function CreateProjectPage() {
     setMilestones(milestones.map((m, i) => i === index ? { ...m, [field]: value } : m))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setResult(null)
-    setTokenAddress(null)
-    resetWrite()
-
-    try {
-      // Validate symbol
-      const cleanSymbol = tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase()
-      if (!cleanSymbol) throw new Error("Token symbol must be alphanumeric and not empty")
-      
-      // Validate and parse supply
-      const supply = BigInt(totalSupply.replace(/,/g, ""))
-      if (supply <= BigInt('0')) throw new Error("Total supply must be greater than 0")
-      
-      // Validate and parse decimals
-      const dec = Number(decimals)
-      if (isNaN(dec) || dec < 0 || dec > 255) throw new Error("Decimals must be a valid number between 0 and 255")
-      
-      // Convert price to wei
-      let pricePerToken: bigint
-      try {
-        pricePerToken = parseUnits(initialPrice, dec)
-      } catch {
-        throw new Error("Initial price must be a valid number")
-      }
-      if (pricePerToken <= BigInt('0')) throw new Error("Price per token must be greater than 0")
-      
-      if (!address) throw new Error("Wallet address is required")
-      
-      // Call contract
-      writeContract({
-        abi: tokenFactoryAbi,
-        address: tokenFactoryAddress as `0x${string}`,
-        functionName: "createToken",
-        args: [
-          title || "ResearchToken",
-          cleanSymbol,
-          supply,
-          dec,
-          pricePerToken,
-        ],
-        account: address as `0x${string}`,
-      })
-      console.log("txHash", txHash)
-    } catch (err: any) {
-      setError(err?.message || "Failed to create token")
+  // Refactored createToken function (no await/try/catch)
+  const createToken = () => {
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      return;
     }
-  }
-
-  useEffect(() => {
-    if (receipt) {
-      console.log("receipt", receipt)
-      try {
-        const eventLog = receipt.logs.find(log => {
-          try {
-            const decoded = decodeEventLog({
-              abi: tokenFactoryAbi,
-              data: log.data,
-              topics: log.topics,
-            })
-            return decoded.eventName === 'TokenCreated'
-          } catch {
-            return false
-          }
-        })
-        if (eventLog) {
-          const event = decodeEventLog({
-            abi: tokenFactoryAbi,
-            data: eventLog.data,
-            topics: eventLog.topics,
-          })
-          // event.args should be an object, but add a type guard
-          const args = event && typeof event === 'object' && 'args' in event ? event.args as Record<string, any> : undefined;
-          const tokenAddress = args?.tokenAddress;
-          console.log("tokenAddress", tokenAddress)
-          if (tokenAddress) {
-            // setTokenAddress(tokenAddress)
-            // Add project to DB
-            (async () => {
-              try {
-                const res = await fetch("/api/experiments", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    title,
-                    description,
-                    category,
-                    tokenSymbol: tokenSymbol.replace(/[^A-Z0-9]/gi, '').toUpperCase(),
-                    totalSupply,
-                    totalFunding,
-                    initialPrice,
-                    licenseType,
-                    royaltyRate,
-                    nftContract,
-                    tokenId,
-                    creatorAddress: address,
-                    tokenAddress,
-                    ipfsMetadataHash: "",
-                    nftMetadataHash: "",
-                    milestones,
-                    licenses: [],
-                    documents: [],
-                  }),
-                });
-                if (!res.ok) {
-                  const errData = await res.json();
-                  setError(errData.error || "Failed to add project to DB");
-                } else {
-                  const data = await res.json();
-                  setResult(data.project);
-                }
-              } catch (dbErr: any) {
-                setError(dbErr?.message || "Failed to add project to DB");
-              }
-            })();
-          } else {
-            setError("Failed to extract token address from event log")
-          }
-        }
-      } catch (err) {
-        setError("Failed to decode TokenCreated event")
-      }
+    if (!formData.name || !formData.symbol || !formData.initialSupply || !formData.pricePerToken) {
+      alert('Please fill in all required fields');
+      return;
     }
-  }, [receipt])
+    const priceInWei = parseUnits(formData.pricePerToken, Number(formData.decimals));
+    writeContract({
+      address: tokenFactoryAddress,
+      abi: tokenFactoryAbi,
+      functionName: 'createToken',
+      args: [
+        formData.name,
+        formData.symbol,
+        BigInt(formData.initialSupply.replace(/,/g, "")),
+        parseInt(formData.decimals),
+        priceInWei
+      ],
+      account: address as `0x${string}`,
+    });
+  };
 
   const handleAttachTerms = async () => {
     if (!result?.ipId) return
@@ -408,7 +317,7 @@ export default function CreateProjectPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
           className={`space-y-8 ${!isConnected ? "opacity-50 pointer-events-none" : ""}`}
-          onSubmit={handleSubmit}
+          onSubmit={createToken}
         >
           {/* Basic Information */}
           <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
@@ -428,8 +337,8 @@ export default function CreateProjectPage() {
                     id="title"
                     placeholder="e.g., Anti-Aging Compound Research"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -499,8 +408,8 @@ export default function CreateProjectPage() {
                     pattern="[A-Z0-9]{1,10}"
                     title="Token symbol should be 1-10 uppercase letters or numbers"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                    value={tokenSymbol}
-                    onChange={e => setTokenSymbol(e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase())}
+                    value={formData.symbol}
+                    onChange={e => setFormData({ ...formData, symbol: e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase() })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -511,8 +420,8 @@ export default function CreateProjectPage() {
                     id="total-supply"
                     placeholder="e.g., 1,000,000"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                    value={totalSupply}
-                    onChange={e => setTotalSupply(e.target.value)}
+                    value={formData.initialSupply}
+                    onChange={e => setFormData({ ...formData, initialSupply: e.target.value })}
                   />
                 </div>
               </div>
@@ -525,8 +434,8 @@ export default function CreateProjectPage() {
                   id="decimals"
                   placeholder="18"
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                  value={decimals}
-                  onChange={e => setDecimals(e.target.value)}
+                  value={formData.decimals}
+                  onChange={e => setFormData({ ...formData, decimals: e.target.value })}
                 />
               </div>
             </CardContent>
@@ -562,8 +471,8 @@ export default function CreateProjectPage() {
                     id="initial-price"
                     placeholder="e.g., $0.75"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                    value={initialPrice}
-                    onChange={e => setInitialPrice(e.target.value)}
+                    value={formData.pricePerToken}
+                    onChange={e => setFormData({ ...formData, pricePerToken: e.target.value })}
                   />
                 </div>
               </div>
@@ -706,18 +615,29 @@ export default function CreateProjectPage() {
               Save Draft
             </Button>
             <Button
-              type="submit"
+              type="button"
               className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20"
-              disabled={!isConnected || isWritePending}
-              onClick={!isConnected ? () => connect({ connector: injected() }) : undefined}
+              disabled={!isConnected || isPending}
+              onClick={createToken}
             >
-              {!isConnected
-                ? "Connect Wallet"
-                : isWritePending
-                  ? "Creating..."
-                  : "Create IP Asset & Launch Project"}
+              {isPending ? "Creating..." : "Create IP Asset & Launch Project"}
             </Button>
           </motion.div>
+          {formError && (
+            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+              <span className="font-semibold">Error:</span> {formError}
+            </div>
+          )}
+          {isSuccess && txHash && (
+            <div className="mt-4 p-4 border border-green-400/30 bg-green-900/20 rounded-xl text-green-200">
+              <span className="font-semibold">Transaction sent!</span> Hash: {txHash}
+            </div>
+          )}
+          {isError && (
+            <div className="mt-4 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+              <span className="font-semibold">Error:</span> {txError?.message}
+            </div>
+          )}
           {result && (
             <div className="mt-8 p-4 border border-green-400/30 bg-green-900/20 rounded-xl text-green-200">
               <h3 className="font-bold text-green-300 mb-2">Research Project Registered!</h3>
@@ -800,11 +720,6 @@ export default function CreateProjectPage() {
               </div>
             </div>
           )}
-          {error && (
-            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
-              <span className="font-semibold">Error:</span> {error}
-            </div>
-          )}
           {tokenCreationLoading && (
             <div className="mt-4 text-fuchsia-300">Creating token onchain...</div>
           )}
@@ -812,6 +727,7 @@ export default function CreateProjectPage() {
             <div className="mt-4 p-4 border border-fuchsia-400/30 bg-fuchsia-900/20 rounded-xl text-fuchsia-200">
               <div className="font-bold">Token Created!</div>
               <div className="text-xs break-all">Address: {tokenAddress}</div>
+              <div className="text-xs break-all mt-2">Receipt: <pre className="whitespace-pre-wrap">{JSON.stringify(receipt, null, 2)}</pre></div>
             </div>
           )}
           {tokenCreationError && (
