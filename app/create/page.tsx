@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-import { useAccount, useWalletClient, useWriteContract, useWaitForTransactionReceipt, useConnect } from "wagmi"
+import { useAccount, useWalletClient, useWriteContract, useWaitForTransactionReceipt, useConnect, usePublicClient } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
 import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
@@ -20,7 +20,6 @@ import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 import { Address } from "viem"
 import { tokenFactoryAbi } from "@/lib/contract/abi/TokenFactory"
 import { contractAddress as tokenFactoryAddress } from "@/lib/contract/address"
-import { walletClient, publicClient } from "@/lib/config"
 import { decodeEventLog, keccak256, toBytes } from "viem"
 import { parseUnits } from "viem/utils"
 import { sepolia } from "viem/chains"
@@ -66,6 +65,7 @@ export default function CreateProjectPage() {
     reset: resetWrite,
   } = useWriteContract()
   const { data: receipt, isSuccess: isReceiptSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  const publicClient = usePublicClient();
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -254,6 +254,53 @@ export default function CreateProjectPage() {
       typeof value === "bigint" ? value.toString() : value
     )
   }
+
+  // Add a new useEffect that fetches the receipt using publicClient and decodes the TokenCreated event
+  useEffect(() => {
+    const fetchTokenAddress = async () => {
+      if (!txHash || !publicClient) {
+        console.log('No txHash or publicClient', { txHash, publicClient });
+        return;
+      }
+      try {
+        const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+        console.log('Fetched receipt:', receipt);
+        if (!receipt.logs || receipt.logs.length === 0) {
+          console.log('No logs in receipt');
+        }
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: tokenFactoryAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+            console.log('Decoded log:', decoded);
+            if (decoded.eventName === 'TokenCreated') {
+              let addressValue = undefined;
+              if (Array.isArray(decoded.args)) {
+                addressValue = decoded.args[0];
+              } else if (decoded.args && typeof decoded.args === 'object' && 'tokenAddress' in decoded.args) {
+                addressValue = decoded.args.tokenAddress;
+              }
+              if (addressValue) {
+                setTokenAddress(addressValue as Address);
+                setTokenCreationError(null);
+                return;
+              }
+            }
+          } catch (e) {
+            console.log('Log decode error:', e);
+          }
+        }
+        setTokenCreationError('TokenCreated event not found in logs.');
+      } catch (err) {
+        setTokenCreationError('Failed to fetch or decode transaction receipt.');
+        console.log('Receipt fetch/decode error:', err);
+      }
+    };
+    fetchTokenAddress();
+  }, [txHash, publicClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
