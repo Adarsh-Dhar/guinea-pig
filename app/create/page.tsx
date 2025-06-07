@@ -15,7 +15,7 @@ import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
 import { createHash } from "crypto"
-import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP } from "@/lib/story-utils"
+import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP, getRoyaltyVaultAddress } from "@/lib/story-utils"
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 import { Address } from "viem"
 
@@ -124,7 +124,7 @@ export default function CreateProjectPage() {
           {
             name: address || "" as `0x${string}`,
             address: address || "" as `0x${string}`,
-            contributionPercent: 100,
+            contributionPercent: 80,
           },
         ],
         image: "https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8",
@@ -185,6 +185,15 @@ export default function CreateProjectPage() {
         licenseTermsIds: response.licenseTermsIds,
         explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
       })
+
+      // Log the royalty vault address for the new IP
+      try {
+        console.log("ipId", response.ipId)
+        const vaultAddress = await getRoyaltyVaultAddress(response.ipId as Address)
+        console.log("Royalty Vault Address (ERC-20):", vaultAddress)
+      } catch (vaultErr) {
+        console.error("Failed to fetch royalty vault address:", vaultErr)
+      }
 
       // 4. Persist to backend DB
       try {
@@ -301,6 +310,14 @@ export default function CreateProjectPage() {
         txHash: response.txHash,
         licenseTokenIds: response.licenseTokenIds,
       })
+
+      // Fetch and log the royalty vault address after minting
+      try {
+        const vaultAddress = await getRoyaltyVaultAddress(result.ipId as Address)
+        console.log("Royalty Vault Address (ERC-20) after mint:", vaultAddress)
+      } catch (vaultErr) {
+        console.error("Failed to fetch royalty vault address after mint:", vaultErr)
+      }
     } catch (err: any) {
       setMintError(err?.message || "Unknown error minting license token")
     } finally {

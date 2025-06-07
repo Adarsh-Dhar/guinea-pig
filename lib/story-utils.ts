@@ -1,7 +1,7 @@
 import { LicenseTerms, LicensingConfig, WIP_TOKEN_ADDRESS } from '@story-protocol/core-sdk'
 import { Address, parseEther, zeroAddress } from 'viem'
 import dotenv from 'dotenv'
-import { networkInfo } from './config'
+import { networkInfo, client } from './config'
 
 dotenv.config()
 
@@ -77,4 +77,13 @@ export const defaultLicensingConfig: LicensingConfig = {
 export function convertRoyaltyPercentToTokens(royaltyPercent: number): number {
     // there are 100,000,000 tokens total (100, but 6 decimals)
     return royaltyPercent * 1_000_000
+}
+
+/**
+ * Gets the royalty vault address (ERC-20 token address) for a given IP ID.
+ * @param ipId The IP asset ID (Address)
+ * @returns The royalty vault address (ERC-20 token address)
+ */
+export async function getRoyaltyVaultAddress(ipId: Address): Promise<Address> {
+  return await client.royalty.getRoyaltyVaultAddress(ipId)
 }
