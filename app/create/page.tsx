@@ -309,11 +309,13 @@ export default function CreateProjectPage() {
 
       // Fetch and log the royalty vault address after minting
       try {
+        console.log("result", result)
         const vaultAddress = await getRoyaltyVaultAddress(result.ipId as Address)
         console.log("Royalty Vault Address (ERC-20) after mint:", vaultAddress)
-        if (vaultAddress && vaultAddress !== "0x0000000000000000000000000000000000000000" && result?.id) {
+        console.log("result?.ipId", result?.ipId)
+        if (vaultAddress && vaultAddress !== "0x0000000000000000000000000000000000000000" && result?.ipId) {
           // POST to backend
-          const res = await fetch(`/api/experiments/${result.id}`, {
+          const res = await fetch(`/api/experiments/${result.ipId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ address: vaultAddress }),
@@ -321,7 +323,7 @@ export default function CreateProjectPage() {
           const data = await res.json()
           console.log("Royalty token saved to backend:", data)
           // Fetch and log the updated project from the backend
-          const projectRes = await fetch(`/api/experiments/${result.id}`)
+          const projectRes = await fetch(`/api/experiments/${result.ipId}`)
           const projectData = await projectRes.json()
           console.log("Updated project from DB:", projectData)
         }

@@ -49,14 +49,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!address) {
       return NextResponse.json({ error: 'Royalty token address required' }, { status: 400 })
     }
-    // Check if already exists
-    const existing = await prisma.royaltyToken.findUnique({ where: { projectId: id } })
+    // Find the project by id or ipId
+    const project = await prisma.project.findFirst({
+      where: {
+        OR: [
+          { id },
+          { ipId: id }
+        ]
+      }
+    })
+    if (!project || !project.ipId) {
+      return NextResponse.json({ error: 'Project not found or missing ipId' }, { status: 404 })
+    }
+    // Check if already exists by ipId
+    const existing = await prisma.royaltyToken.findUnique({ where: { ipId: project.ipId! } })
     if (existing) {
       return NextResponse.json({ error: 'Royalty token already exists for this project' }, { status: 400 })
     }
     const royaltyToken = await prisma.royaltyToken.create({
       data: {
-        projectId: id,
+        ipId: project.ipId!,
         address,
       },
     })

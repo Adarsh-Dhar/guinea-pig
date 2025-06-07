@@ -127,8 +127,8 @@ model Activity {
 
 model RoyaltyToken {
   id        String   @id @default(uuid())
-  projectId String   @unique
+  ipId String   @unique
   address   String
   createdAt DateTime @default(now())
-  project   Project  @relation("ProjectRoyaltyToken", fields: [projectId], references: [id])
+  project   Project  @relation("ProjectRoyaltyToken", fields: [ipId], references: [ipId])
 }
