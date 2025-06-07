@@ -34,6 +34,7 @@ export default function ProjectDetailPage() {
   const [expanded, setExpanded] = useState(false);
   const [voteAnimation, setVoteAnimation] = useState(false);
   const { address: userWalletAddress, isConnected } = useAccount();
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -114,8 +115,8 @@ export default function ProjectDetailPage() {
         functionName: "decimals",
       });
       console.log("Token decimals:", decimals);
-      // Calculate amount for 1 token
-      const amount = bigIntPow(BigInt(10), Number(decimals));
+      // Calculate amount for selected quantity
+      const amount = bigIntPow(BigInt(10), Number(decimals)) * BigInt(quantity);
       // Check balance
       const balance = await publicClient.readContract({
         address: project.project.royaltyToken.address,
@@ -370,11 +371,31 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="text-white/70 text-sm">Connect your wallet to invest</div>
                 </div>
-                <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
-                  onClick={handleBuy}
-                >
-                  Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
-                </Button>
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    className="px-3 py-1 rounded-l-lg bg-fuchsia-700/30 text-white font-bold text-lg hover:bg-fuchsia-700/50 transition disabled:opacity-50"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    disabled={quantity === 1}
+                    aria-label="Decrease quantity"
+                  >
+                    -
+                  </button>
+                  <span className="px-4 py-1 bg-fuchsia-900/30 text-white font-mono text-lg border border-fuchsia-700/40">
+                    {quantity}
+                  </span>
+                  <button
+                    className="px-3 py-1 rounded-r-lg bg-fuchsia-700/30 text-white font-bold text-lg hover:bg-fuchsia-700/50 transition"
+                    onClick={() => setQuantity(q => q + 1)}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                  <Button className="flex-1 ml-4 bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
+                    onClick={handleBuy}
+                  >
+                    Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
+                  </Button>
+                </div>
               </div>
             </Card>
 
