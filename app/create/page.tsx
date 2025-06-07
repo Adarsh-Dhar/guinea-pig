@@ -186,15 +186,6 @@ export default function CreateProjectPage() {
         explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
       })
 
-      // Log the royalty vault address for the new IP
-      try {
-        console.log("ipId", response.ipId)
-        const vaultAddress = await getRoyaltyVaultAddress(response.ipId as Address)
-        console.log("Royalty Vault Address (ERC-20):", vaultAddress)
-      } catch (vaultErr) {
-        console.error("Failed to fetch royalty vault address:", vaultErr)
-      }
-
       // 4. Persist to backend DB
       try {
         const dbRes = await fetch("/api/experiments", {
@@ -216,7 +207,7 @@ export default function CreateProjectPage() {
             ipfsMetadataHash: `0x${createHash("sha256").update(safeStringify(ipMetadata)).digest("hex")}`,
             nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
             milestones,
-            // Optionally, you can send licenses and documents if available
+            ipId: response.ipId,
           }),
         })
         console.log("db response", dbRes)
@@ -227,6 +218,11 @@ export default function CreateProjectPage() {
       } catch (dbErr: any) {
         setError(`DB Error: ${dbErr?.message || dbErr}`)
       }
+
+      // Fetch and log the updated project from the backend
+      const projectRes = await fetch(`/api/experiments/${response.ipId}`)
+      const projectData = await projectRes.json()
+      console.log("Updated project from DB:", projectData)
     } catch (err: any) {
       setError(err?.message || "Unknown error during IP registration")
     } finally {
@@ -315,8 +311,22 @@ export default function CreateProjectPage() {
       try {
         const vaultAddress = await getRoyaltyVaultAddress(result.ipId as Address)
         console.log("Royalty Vault Address (ERC-20) after mint:", vaultAddress)
+        if (vaultAddress && vaultAddress !== "0x0000000000000000000000000000000000000000" && result?.id) {
+          // POST to backend
+          const res = await fetch(`/api/experiments/${result.id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: vaultAddress }),
+          })
+          const data = await res.json()
+          console.log("Royalty token saved to backend:", data)
+          // Fetch and log the updated project from the backend
+          const projectRes = await fetch(`/api/experiments/${result.id}`)
+          const projectData = await projectRes.json()
+          console.log("Updated project from DB:", projectData)
+        }
       } catch (vaultErr) {
-        console.error("Failed to fetch royalty vault address after mint:", vaultErr)
+        console.error("Failed to fetch or save royalty vault address after mint:", vaultErr)
       }
     } catch (err: any) {
       setMintError(err?.message || "Unknown error minting license token")

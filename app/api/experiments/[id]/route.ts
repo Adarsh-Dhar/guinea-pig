@@ -7,8 +7,13 @@ const prisma = new PrismaClient()
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params
   try {
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: {
+        OR: [
+          { id },
+          { ipId: id }
+        ]
+      },
       include: {
         milestones: true,
         licenses: true,
@@ -34,4 +39,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   // Implement delete logic as needed
   return NextResponse.json({ message: 'DELETE not implemented' }, { status: 501 })
+}
+
+// POST: Create a royalty token for a project
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+  try {
+    const { address } = await req.json()
+    if (!address) {
+      return NextResponse.json({ error: 'Royalty token address required' }, { status: 400 })
+    }
+    // Check if already exists
+    const existing = await prisma.royaltyToken.findUnique({ where: { projectId: id } })
+    if (existing) {
+      return NextResponse.json({ error: 'Royalty token already exists for this project' }, { status: 400 })
+    }
+    const royaltyToken = await prisma.royaltyToken.create({
+      data: {
+        projectId: id,
+        address,
+      },
+    })
+    return NextResponse.json({ royaltyToken }, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create royalty token', details: (error as any)?.message }, { status: 500 })
+  }
 }
