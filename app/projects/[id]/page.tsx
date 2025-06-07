@@ -12,6 +12,17 @@ import ParticleBackground from "@/components/particle-background"
 import { LineChart } from "@/components/line-chart"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useParams } from "next/navigation"
+import { client, publicClient } from "@/lib/config"
+import { parseEther } from "viem"
+import { useAccount } from "wagmi"
+import { erc20Abi } from "viem"
+
+// Helper for BigInt exponentiation (works in all JS targets)
+function bigIntPow(base: bigint, exp: number): bigint {
+  let result = BigInt(1);
+  for (let i = 0; i < exp; i++) result *= base;
+  return result;
+}
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -22,6 +33,7 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [voteAnimation, setVoteAnimation] = useState(false);
+  const { address: userWalletAddress, isConnected } = useAccount();
 
   useEffect(() => {
     if (!id) return;
@@ -84,6 +96,58 @@ export default function ProjectDetailPage() {
       },
     ],
   }
+
+  const handleBuy = async () => {
+    if (!project?.project?.royaltyToken || !project.project.ipId) {
+      console.log("No royaltyToken or ipId found for this project.");
+      return;
+    }
+    if (!userWalletAddress) {
+      console.log("Please connect your wallet first.");
+      return;
+    }
+    try {
+      // Fetch token decimals
+      const decimals = await publicClient.readContract({
+        address: project.project.royaltyToken.address,
+        abi: erc20Abi,
+        functionName: "decimals",
+      });
+      console.log("Token decimals:", decimals);
+      // Calculate amount for 1 token
+      const amount = bigIntPow(BigInt(10), Number(decimals));
+      // Check balance
+      const balance = await publicClient.readContract({
+        address: project.project.royaltyToken.address,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [project.project.ipId],
+      });
+      console.log("IP Account token balance:", balance.toString());
+      console.log("Calculated amount to transfer:", amount.toString());
+      if (BigInt(balance) < amount) {
+        console.error("IP Account does not have enough tokens to transfer.");
+        return;
+      }
+      const response = await client.ipAccount.transferErc20({
+        ipId: project.project.ipId,
+        tokens: [{
+          address: project.project.royaltyToken.address,
+          amount,
+          target: userWalletAddress,
+        }],
+        txOptions: {
+          waitForTransaction: true,
+        },
+      });
+      console.log(`Royalty tokens transferred! Transaction hash: ${response.txHash}`);
+      if (response.receipt) {
+        console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
+      }
+    } catch (error) {
+      console.error("Error transferring royalty tokens:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
@@ -307,13 +371,7 @@ export default function ProjectDetailPage() {
                   <div className="text-white/70 text-sm">Connect your wallet to invest</div>
                 </div>
                 <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
-                  onClick={() => {
-                    if (project?.project?.royaltyToken) {
-                      console.log('RoyaltyToken:', project.project.royaltyToken);
-                    } else {
-                      console.log('No royaltyToken found for this project.');
-                    }
-                  }}
+                  onClick={handleBuy}
                 >
                   Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
                 </Button>
