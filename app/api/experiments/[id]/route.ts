@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         milestones: true,
         licenses: true,
         documents: true,
+        royaltyToken: true,
       },
     })
     if (!project) {

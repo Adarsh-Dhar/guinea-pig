@@ -306,7 +306,15 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="text-white/70 text-sm">Connect your wallet to invest</div>
                 </div>
-                <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30">
+                <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
+                  onClick={() => {
+                    if (project?.project?.royaltyToken) {
+                      console.log('RoyaltyToken:', project.project.royaltyToken);
+                    } else {
+                      console.log('No royaltyToken found for this project.');
+                    }
+                  }}
+                >
                   Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
                 </Button>
               </div>
