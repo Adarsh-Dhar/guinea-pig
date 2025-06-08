@@ -109,6 +109,7 @@ model Vote {
   proposalId String
   userId     String
   choice     String
+  weight     String
   createdAt  DateTime @default(now())
   proposal   Proposal @relation(fields: [proposalId], references: [id])
   user       User     @relation(fields: [userId], references: [id])

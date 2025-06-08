@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Vote, Activity, ChevronUp, ChevronDown, Sparkles, Dna } from "lucide-react"
@@ -53,6 +53,19 @@ export default function ProjectDetailPage() {
   const { address: userWalletAddress, isConnected } = useAccount();
   const [quantity, setQuantity] = useState(1);
 
+  // Governance state
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [govLoading, setGovLoading] = useState(false);
+  const [govError, setGovError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newProposal, setNewProposal] = useState({ title: "", description: "" });
+  const [creating, setCreating] = useState(false);
+  const [voting, setVoting] = useState<string | null>(null); // proposalId being voted on
+  const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
+  const [userTokenDecimals, setUserTokenDecimals] = useState<number>(18);
+  const [refreshGov, setRefreshGov] = useState(0);
+  const proposalTitleRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -70,6 +83,79 @@ export default function ProjectDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    const logRoyaltyTokenBalance = async () => {
+      if (
+        isConnected &&
+        userWalletAddress &&
+        project?.project?.royaltyToken?.address
+      ) {
+        try {
+          const royaltyTokenAddress = project.project.royaltyToken.address;
+          const balance = await publicClient.readContract({
+            address: royaltyTokenAddress,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [userWalletAddress],
+          });
+          const decimals = await publicClient.readContract({
+            address: royaltyTokenAddress,
+            abi: erc20Abi,
+            functionName: "decimals",
+          });
+          // Convert balance to readable format
+          const formatted = Number(balance) / Math.pow(10, Number(decimals));
+          console.log(`User has ${formatted} royalty tokens (${royaltyTokenAddress})`);
+        } catch (err) {
+          console.error("Failed to fetch royalty token balance", err);
+        }
+      }
+    };
+    logRoyaltyTokenBalance();
+  }, [isConnected, userWalletAddress, project]);
+
+  // Fetch proposals for this project
+  useEffect(() => {
+    if (!project?.project?.id) return;
+    setGovLoading(true);
+    fetch(`/api/governance/proposals?projectId=${project.project.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setProposals(data.proposals || []);
+        setGovLoading(false);
+      })
+      .catch(err => {
+        setGovError("Failed to fetch proposals");
+        setGovLoading(false);
+      });
+  }, [ refreshGov]);
+
+  // Fetch user token balance for eligibility
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (isConnected && userWalletAddress && project?.project?.royaltyToken?.address) {
+        try {
+          const decimals = await publicClient.readContract({
+            address: project.project.royaltyToken.address,
+            abi: erc20Abi,
+            functionName: "decimals",
+          });
+          setUserTokenDecimals(Number(decimals));
+          const balance = await publicClient.readContract({
+            address: project.project.royaltyToken.address,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [userWalletAddress],
+          });
+          setUserTokenBalance(Number(balance) / Math.pow(10, Number(decimals)));
+        } catch (err) {
+          setUserTokenBalance(0);
+        }
+      }
+    };
+    fetchBalance();
+  }, [isConnected, userWalletAddress, project?.project?.royaltyToken?.address, refreshGov]);
 
   if (loading) {
     return (
@@ -171,6 +257,61 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error(`Error sending ETH or transferring IP(s):`, error);
     }
+  };
+
+  // Create proposal handler
+  const handleCreateProposal = async () => {
+    setCreating(true);
+    setGovError(null);
+    try {
+      const res = await fetch("/api/governance/proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: p.id,
+          title: newProposal.title,
+          description: newProposal.description,
+          creatorAddress: userWalletAddress,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setGovError(data.error || "Failed to create proposal");
+      } else {
+        setShowCreate(false);
+        setNewProposal({ title: "", description: "" });
+        setRefreshGov(r => r + 1);
+      }
+    } catch (err) {
+      setGovError("Failed to create proposal");
+    }
+    setCreating(false);
+  };
+
+  // Vote handler
+  const handleVote = async (proposalId: string, choice: "for" | "against") => {
+    setVoting(proposalId);
+    setGovError(null);
+    try {
+      const res = await fetch("/api/governance/votes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proposalId,
+          userAddress: userWalletAddress,
+          choice,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setGovError(data.error || "Failed to vote");
+      } else {
+        setRefreshGov(r => r + 1);
+      }
+    } catch (err) {
+      setGovError("Failed to vote");
+    }
+    setVoting(null);
   };
 
   return (
@@ -329,8 +470,82 @@ export default function ProjectDetailPage() {
                   <div className="flex items-center mb-4">
                     <Vote className="h-6 w-6 text-purple-400 mr-2" />
                     <h3 className="text-white text-xl font-bold">Active Proposals</h3>
+                    {isConnected && userTokenBalance >= 5 && (
+                      <Button className="ml-auto bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white" onClick={() => setShowCreate(true)}>
+                        Create Proposal
+                      </Button>
+                    )}
                   </div>
-                  <div className="text-white/70">No governance proposals available.</div>
+                  {govError && <div className="text-red-400 mb-2">{govError}</div>}
+                  {showCreate && (
+                    <div className="mb-6 p-4 bg-black/40 rounded-xl border border-fuchsia-700/30">
+                      <input
+                        ref={proposalTitleRef}
+                        className="w-full mb-2 px-3 py-2 rounded bg-white/10 text-white placeholder:text-white/40 border border-fuchsia-700/30 focus:outline-none"
+                        placeholder="Proposal Title"
+                        value={newProposal.title}
+                        onChange={e => setNewProposal({ ...newProposal, title: e.target.value })}
+                        disabled={creating}
+                      />
+                      <textarea
+                        className="w-full mb-2 px-3 py-2 rounded bg-white/10 text-white placeholder:text-white/40 border border-fuchsia-700/30 focus:outline-none"
+                        placeholder="Proposal Description"
+                        value={newProposal.description}
+                        onChange={e => setNewProposal({ ...newProposal, description: e.target.value })}
+                        disabled={creating}
+                        rows={3}
+                      />
+                      <div className="flex gap-2">
+                        <Button className="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white" onClick={handleCreateProposal} disabled={creating || !newProposal.title.trim()}>
+                          {creating ? "Creating..." : "Submit"}
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                  {govLoading ? (
+                    <div className="text-white/70">Loading proposals...</div>
+                  ) : proposals.length === 0 ? (
+                    <div className="text-white/60">No governance proposals available.</div>
+                  ) : (
+                    <div className="space-y-6">
+                      {proposals.map((proposal: any) => (
+                        <Card key={proposal.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
+                          <div className="flex items-center mb-2">
+                            <span className="text-purple-400 font-bold text-lg mr-2">{proposal.title}</span>
+                            <Badge className="ml-2 bg-purple-700/40 text-white">{proposal.status}</Badge>
+                          </div>
+                          <div className="text-white/80 mb-2">{proposal.description}</div>
+                          <div className="flex gap-4 items-center mb-2">
+                            <span className="text-white/60 text-sm">Ends: {new Date(proposal.endsAt).toLocaleString()}</span>
+                          </div>
+                          <div className="flex gap-4 items-center mb-2">
+                            <span className="text-green-400 font-mono">For: {proposal.votes.filter((v: any) => v.choice === 'for').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
+                            <span className="text-red-400 font-mono">Against: {proposal.votes.filter((v: any) => v.choice === 'against').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
+                            <span className="text-cyan-400 font-mono">Quorum: 20</span>
+                          </div>
+                          {proposal.status === 'active' && isConnected && (
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                className="bg-gradient-to-r from-green-600 to-green-400 text-white"
+                                onClick={() => handleVote(proposal.id, 'for')}
+                                disabled={voting === proposal.id || proposal.votes.some((v: any) => v.userId === userWalletAddress)}
+                              >
+                                Vote For
+                              </Button>
+                              <Button
+                                className="bg-gradient-to-r from-red-600 to-red-400 text-white"
+                                onClick={() => handleVote(proposal.id, 'against')}
+                                disabled={voting === proposal.id || proposal.votes.some((v: any) => v.userId === userWalletAddress)}
+                              >
+                                Vote Against
+                              </Button>
+                            </div>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               </TabsContent>
 
