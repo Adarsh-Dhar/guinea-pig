@@ -12,10 +12,12 @@ import ParticleBackground from "@/components/particle-background"
 import { LineChart } from "@/components/line-chart"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useParams } from "next/navigation"
-import { client, publicClient } from "@/lib/config"
+import { client, publicClient, walletClient } from "@/lib/config"
 import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 import { erc20Abi } from "viem"
+import { aeneid } from "@story-protocol/core-sdk";
+import { storyAeneid } from "viem/chains"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -23,6 +25,21 @@ function bigIntPow(base: bigint, exp: number): bigint {
   for (let i = 0; i < exp; i++) result *= base;
   return result;
 }
+
+// Minimal ERC721 ABI for safeTransferFrom
+const erc721Abi = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "from", "type": "address" },
+      { "internalType": "address", "name": "to", "type": "address" },
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -99,54 +116,59 @@ export default function ProjectDetailPage() {
   }
 
   const handleBuy = async () => {
-    if (!project?.project?.royaltyToken || !project.project.ipId) {
-      console.log("No royaltyToken or ipId found for this project.");
-      return;
-    }
+    const recipientAddress = "0xf76daC24BaEf645ee0b3dfAc1997c6b838eF280D";
     if (!userWalletAddress) {
       console.log("Please connect your wallet first.");
       return;
     }
     try {
-      // Fetch token decimals
-      const decimals = await publicClient.readContract({
-        address: project.project.royaltyToken.address,
-        abi: erc20Abi,
-        functionName: "decimals",
-      });
-      console.log("Token decimals:", decimals);
-      // Calculate amount for selected quantity
-      const amount = bigIntPow(BigInt(10), Number(decimals)) * BigInt(quantity);
-      // Check balance
-      const balance = await publicClient.readContract({
-        address: project.project.royaltyToken.address,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [project.project.ipId],
-      });
-      console.log("IP Account token balance:", balance.toString());
-      console.log("Calculated amount to transfer:", amount.toString());
-      if (BigInt(balance) < amount) {
-        console.error("IP Account does not have enough tokens to transfer.");
+      // 1. Send 1 ETH
+      if (typeof window !== "undefined" && window.ethereum) {
+        await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: userWalletAddress,
+              to: recipientAddress,
+              value: parseEther("1").toString(16), // hex string
+            },
+          ],
+        });
+        console.log("1 ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.");
+      } else {
+        console.error("No Ethereum provider found.");
         return;
       }
-      const response = await client.ipAccount.transferErc20({
-        ipId: project.project.ipId,
-        tokens: [{
-          address: project.project.royaltyToken.address,
-          amount,
-          target: userWalletAddress,
-        }],
-        txOptions: {
-          waitForTransaction: true,
-        },
-      });
-      console.log(`Royalty tokens transferred! Transaction hash: ${response.txHash}`);
-      if (response.receipt) {
-        console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
+      // 2. Transfer 1 royalty token (IP) using SDK
+      if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
+        const royaltyTokenAddress = project.project.royaltyToken.address;
+        // Get decimals
+        const decimals = await publicClient.readContract({
+          address: royaltyTokenAddress,
+          abi: erc20Abi,
+          functionName: "decimals",
+        });
+        const amount = bigIntPow(BigInt(10), Number(decimals)); // 1 token
+        const response = await client.ipAccount.transferErc20({
+          ipId: project.project.ipId,
+          tokens: [{
+            address: royaltyTokenAddress,
+            amount,
+            target: userWalletAddress,
+          }],
+          txOptions: {
+            waitForTransaction: true,
+          },
+        });
+        console.log(`1 royalty token (IP) transferred. Tx hash: ${response.txHash}`);
+        if (response.receipt) {
+          console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
+        }
+      } else {
+        console.error("No ipId or royalty token address found for this project.");
       }
     } catch (error) {
-      console.error("Error transferring royalty tokens:", error);
+      console.error("Error sending 1 ETH or transferring 1 IP:", error);
     }
   };
 
