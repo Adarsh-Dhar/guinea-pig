@@ -16,6 +16,8 @@ model User {
   investments Investment[]
   projects    Project[]    @relation("UserProjects")
   votes       Vote[]
+  reviewVotes ReviewVote[]
+  reviewsGiven Review[]      @relation("UserReviews")
 }
 
 model Project {
@@ -47,6 +49,7 @@ model Project {
   creator          User         @relation("UserProjects", fields: [creatorAddress], references: [address])
   proposals        Proposal[]
   royaltyToken     RoyaltyToken? @relation("ProjectRoyaltyToken")
+  reviews          Review[]
 }
 
 model Milestone {
@@ -132,4 +135,28 @@ model RoyaltyToken {
   address   String
   createdAt DateTime @default(now())
   project   Project  @relation("ProjectRoyaltyToken", fields: [ipId], references: [ipId])
+}
+
+model Review {
+  id          String      @id @default(uuid())
+  projectId   String
+  reviewerId  String      // User.id (wallet address)
+  content     String      // Review text or IPFS hash
+  rating      Int         // 1-5
+  createdAt   DateTime    @default(now())
+  status      String      // 'pending', 'approved', 'rejected'
+  votes       ReviewVote[]
+  rewarded    Boolean     @default(false)
+  project     Project     @relation(fields: [projectId], references: [id])
+  reviewer    User        @relation("UserReviews", fields: [reviewerId], references: [id])
+}
+
+model ReviewVote {
+  id        String   @id @default(uuid())
+  reviewId  String
+  voterId   String   // User.id (wallet address)
+  value     Int      // +1 or -1
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id])
+  voter     User     @relation(fields: [voterId], references: [id])
 }

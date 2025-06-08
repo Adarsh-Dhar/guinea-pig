@@ -18,6 +18,7 @@ import { useAccount } from "wagmi"
 import { erc20Abi } from "viem"
 import { aeneid } from "@story-protocol/core-sdk";
 import { storyAeneid } from "viem/chains"
+import ReviewModal from "@/components/ui/review-modal"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -65,6 +66,12 @@ export default function ProjectDetailPage() {
   const [userTokenDecimals, setUserTokenDecimals] = useState<number>(18);
   const [refreshGov, setRefreshGov] = useState(0);
   const proposalTitleRef = useRef<HTMLInputElement>(null);
+
+  // Peer Review state
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -156,6 +163,15 @@ export default function ProjectDetailPage() {
     };
     fetchBalance();
   }, [isConnected, userWalletAddress, project?.project?.royaltyToken?.address, refreshGov]);
+
+  // Fetch reviews
+  const fetchReviews = async () => {
+    if (!project?.project?.id) return;
+    const res = await fetch(`/api/reviews?projectId=${project.project.id}`);
+    const data = await res.json();
+    setReviews(data.reviews || []);
+  };
+  useEffect(() => { fetchReviews(); }, [project?.project?.id, refreshGov]);
 
   if (loading) {
     return (
@@ -314,6 +330,50 @@ export default function ProjectDetailPage() {
     setVoting(null);
   };
 
+  // Submit review
+  const submitReview = async (content: string, rating: number) => {
+    setSubmittingReview(true);
+    setReviewError("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: p.id,
+          reviewerId: userWalletAddress,
+          content,
+          rating,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setReviewError(data.error || "Failed to submit review");
+      } else {
+        setShowReviewModal(false);
+        fetchReviews();
+      }
+    } catch {
+      setReviewError("Failed to submit review");
+    }
+    setSubmittingReview(false);
+  };
+
+  // Vote on review
+  const voteReview = async (reviewId: string, value: number) => {
+    try {
+      const res = await fetch("/api/reviews/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewId,
+          voterId: userWalletAddress,
+          value,
+        }),
+      });
+      if (res.ok) fetchReviews();
+    } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
       <ParticleBackground />
@@ -400,6 +460,12 @@ export default function ProjectDetailPage() {
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white rounded-lg"
                 >
                   Tokenomics
+                </TabsTrigger>
+                <TabsTrigger
+                  value="peer-review"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white rounded-lg"
+                >
+                  Peer Review
                 </TabsTrigger>
               </TabsList>
 
@@ -571,6 +637,64 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="peer-review" className="space-y-6">
+                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-white text-xl font-bold">Open Peer Reviews</h3>
+                    {isConnected && (
+                      <Button className="ml-auto bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white"
+                        onClick={() => setShowReviewModal(true)}>
+                        Submit Review
+                      </Button>
+                    )}
+                  </div>
+                  {reviewError && <div className="text-red-400 mb-2">{reviewError}</div>}
+                  {reviews.length === 0 ? (
+                    <div className="text-white/60">No reviews yet. Be the first to review!</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review: any) => (
+                        <Card key={review.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-fuchsia-400 font-mono">{review.reviewer?.address?.slice(0, 6)}...{review.reviewer?.address?.slice(-4)}</span>
+                            <span className="text-white/40 text-xs">{new Date(review.createdAt).toLocaleString()}</span>
+                            {review.rewarded && <span className="ml-2 text-green-400">Rewarded</span>}
+                          </div>
+                          <div className="mt-2 text-white/90">{review.content}</div>
+                          <div className="flex gap-2 mt-2">
+                            <span className="text-yellow-400">Rating: {review.rating}/5</span>
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-green-600 to-green-400 text-white"
+                              onClick={() => voteReview(review.id, 1)}
+                              disabled={review.votes.some((v: any) => v.voterId === userWalletAddress)}
+                            >
+                              👍
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-red-600 to-red-400 text-white"
+                              onClick={() => voteReview(review.id, -1)}
+                              disabled={review.votes.some((v: any) => v.voterId === userWalletAddress)}
+                            >
+                              👎
+                            </Button>
+                            <span className="text-white/60">{review.votes.reduce((acc: number, v: any) => acc + v.value, 0)} votes</span>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+                {showReviewModal && (
+                  <ReviewModal
+                    onClose={() => setShowReviewModal(false)}
+                    onSubmit={submitReview}
+                    loading={submittingReview}
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </motion.div>
