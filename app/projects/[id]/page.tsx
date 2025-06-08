@@ -122,7 +122,7 @@ export default function ProjectDetailPage() {
       return;
     }
     try {
-      // 1. Send 1 ETH
+      // 1. Send ETH proportional to quantity
       if (typeof window !== "undefined" && window.ethereum) {
         await window.ethereum.request({
           method: "eth_sendTransaction",
@@ -130,16 +130,16 @@ export default function ProjectDetailPage() {
             {
               from: userWalletAddress,
               to: recipientAddress,
-              value: parseEther("1").toString(16), // hex string
+              value: parseEther(quantity.toString()).toString(16), // hex string, quantity * 1 ETH
             },
           ],
         });
-        console.log("1 ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.");
+        console.log(`${quantity} ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.`);
       } else {
         console.error("No Ethereum provider found.");
         return;
       }
-      // 2. Transfer 1 royalty token (IP) using SDK
+      // 2. Transfer royalty tokens (RT/IP) proportional to quantity using SDK
       if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
         const royaltyTokenAddress = project.project.royaltyToken.address;
         // Get decimals
@@ -148,19 +148,20 @@ export default function ProjectDetailPage() {
           abi: erc20Abi,
           functionName: "decimals",
         });
-        const amount = bigIntPow(BigInt(10), Number(decimals)); // 1 token
+        const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
+        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
         const response = await client.ipAccount.transferErc20({
           ipId: project.project.ipId,
           tokens: [{
             address: royaltyTokenAddress,
-            amount,
+            amount: totalAmount,
             target: userWalletAddress,
           }],
           txOptions: {
             waitForTransaction: true,
           },
         });
-        console.log(`1 royalty token (IP) transferred. Tx hash: ${response.txHash}`);
+        console.log(`${quantity} royalty token(s) (IP) transferred. Tx hash: ${response.txHash}`);
         if (response.receipt) {
           console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
         }
@@ -168,7 +169,7 @@ export default function ProjectDetailPage() {
         console.error("No ipId or royalty token address found for this project.");
       }
     } catch (error) {
-      console.error("Error sending 1 ETH or transferring 1 IP:", error);
+      console.error(`Error sending ETH or transferring IP(s):`, error);
     }
   };
 
