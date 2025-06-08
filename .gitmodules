@@ -4,3 +4,9 @@
 [submodule "contract/lib/openzeppelin-contracts"]
 	path = contract/lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "contract/lib/protocol-core"]
+	path = contract/lib/protocol-core
+	url = https://github.com/storyprotocol/protocol-core
+[submodule "contract/lib/contracts"]
+	path = contract/lib/contracts
+	url = https://github.com/tokenbound/contracts
