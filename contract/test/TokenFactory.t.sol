@@ -35,11 +35,7 @@ contract TokenFactoryTest is Test {
         token = new MockERC20();
         royaltyModule = new MockRoyaltyModule();
         ipAssetRegistry = new MockIPAssetRegistry();
-        factory = new TokenFactory(
-            address(royaltyModule),
-            address(ipAssetRegistry),
-            address(token)
-        );
+        factory = new TokenFactory();
         // Mint tokens to user and approve factory
         token.mint(user, 1000 ether);
         vm.prank(user);
@@ -52,7 +48,7 @@ contract TokenFactoryTest is Test {
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
         emit TokenFactory.TokensSentAndRoyaltyPaid(user, recipient, ipAssetId, 10 ether);
-        factory.sendTokensAndMintRoyalty(recipient, ipAssetId, 10 ether);
+        factory.sendTokens(recipient, ipAssetId, address(ipAssetRegistry));
         assertEq(token.balanceOf(recipient), 10 ether);
         assertEq(token.balanceOf(user), 990 ether);
     }
@@ -61,24 +57,24 @@ contract TokenFactoryTest is Test {
         address unregistered = address(0x999);
         vm.prank(user);
         vm.expectRevert("IP Asset not registered");
-        factory.sendTokensAndMintRoyalty(recipient, unregistered, 1 ether);
+        factory.sendTokens(recipient, unregistered, address(ipAssetRegistry));
     }
 
     function testRevertIfZeroAmount() public {
         vm.prank(user);
         vm.expectRevert("Amount must be greater than 0");
-        factory.sendTokensAndMintRoyalty(recipient, ipAssetId, 0);
+        factory.sendTokens(recipient, ipAssetId, address(ipAssetRegistry));
     }
 
     function testRevertIfInvalidRecipient() public {
         vm.prank(user);
         vm.expectRevert("Invalid recipient");
-        factory.sendTokensAndMintRoyalty(address(0), ipAssetId, 1 ether);
+        factory.sendTokens(address(0), ipAssetId, address(ipAssetRegistry));
     }
 
     function testRevertIfInvalidIpAssetId() public {
         vm.prank(user);
         vm.expectRevert("Invalid IP Asset ID");
-        factory.sendTokensAndMintRoyalty(recipient, address(0), 1 ether);
+        factory.sendTokens(recipient, address(0), address(ipAssetRegistry));
     }
 }
