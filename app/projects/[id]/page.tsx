@@ -234,7 +234,6 @@ export default function ProjectDetailPage() {
         args: [
           TOKEN_FACTORY_RECIPIENT,
           project.project.ipId,
-          IP_ASSET_REGISTRY,
         ],
       });
       // Send transaction using MetaMask or any injected wallet
