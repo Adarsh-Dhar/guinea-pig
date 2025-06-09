@@ -13,12 +13,14 @@ import { LineChart } from "@/components/line-chart"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useParams } from "next/navigation"
 import { client, publicClient, walletClient } from "@/lib/config"
-import { parseEther } from "viem"
+import { parseEther, encodeFunctionData } from "viem"
 import { useAccount } from "wagmi"
 import { erc20Abi } from "viem"
 import { aeneid } from "@story-protocol/core-sdk";
 import { storyAeneid } from "viem/chains"
 import ReviewModal from "@/components/ui/review-modal"
+import { CONTRACT_ADDRESS } from "@/lib/contract/address"
+import { TOKEN_FACTORY_ABI } from "@/lib/contract/abi"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -41,6 +43,9 @@ const erc721Abi = [
     "type": "function"
   }
 ];
+
+const IP_ASSET_REGISTRY = "0x77319B4031e6eF1250907aa00018B8B1c67a244b"
+const TOKEN_FACTORY_RECIPIENT = "0xf76daC24BaEf645ee0b3dfAc1997c6b838eF280D"
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -218,60 +223,37 @@ export default function ProjectDetailPage() {
   }
 
   const handleBuy = async () => {
-    const recipientAddress = "0xf76daC24BaEf645ee0b3dfAc1997c6b838eF280D";
-    if (!userWalletAddress) {
-      console.log("Please connect your wallet first.");
+    if (!userWalletAddress || !project?.project?.ipId) {
+      console.log("Please connect your wallet and ensure project is loaded.");
       return;
     }
     try {
-      // 1. Send ETH proportional to quantity
-      if (typeof window !== "undefined" && window.ethereum) {
-        await window.ethereum.request({
-          method: "eth_sendTransaction",
-          params: [
-            {
-              from: userWalletAddress,
-              to: recipientAddress,
-              value: parseEther(quantity.toString()).toString(16), // hex string, quantity * 1 ETH
-            },
-          ],
-        });
-        console.log(`${quantity} ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.`);
-      } else {
-        console.error("No Ethereum provider found.");
-        return;
-      }
-      // 2. Transfer royalty tokens (RT/IP) proportional to quantity using SDK
-      if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
-        const royaltyTokenAddress = project.project.royaltyToken.address;
-        // Get decimals
-        const decimals = await publicClient.readContract({
-          address: royaltyTokenAddress,
-          abi: erc20Abi,
-          functionName: "decimals",
-        });
-        const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
-        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
-        const response = await client.ipAccount.transferErc20({
-          ipId: project.project.ipId,
-          tokens: [{
-            address: royaltyTokenAddress,
-            amount: totalAmount,
-            target: userWalletAddress,
-          }],
-          txOptions: {
-            waitForTransaction: true,
+      const data = encodeFunctionData({
+        abi: TOKEN_FACTORY_ABI,
+        functionName: "sendTokens",
+        args: [
+          TOKEN_FACTORY_RECIPIENT,
+          project.project.ipId,
+          IP_ASSET_REGISTRY,
+        ],
+      });
+      // Send transaction using MetaMask or any injected wallet
+      const tx = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: userWalletAddress,
+            to: CONTRACT_ADDRESS,
+            value: parseEther(quantity.toString()).toString(16), // hex string
+            data,
           },
-        });
-        console.log(`${quantity} royalty token(s) (IP) transferred. Tx hash: ${response.txHash}`);
-        if (response.receipt) {
-          console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
-        }
-      } else {
-        console.error("No ipId or royalty token address found for this project.");
-      }
+        ],
+      });
+      console.log("Tokens sent and royalty minted. Tx hash:", tx);
+      // Optionally, show a toast or update UI state here
     } catch (error) {
-      console.error(`Error sending ETH or transferring IP(s):`, error);
+      console.error("Error sending tokens/minting royalty:", error);
+      // Optionally, show error to user
     }
   };
 
