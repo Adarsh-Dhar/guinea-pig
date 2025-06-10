@@ -8,6 +8,7 @@ import GlowingCard from "@/components/glowing-card"
 import AnimatedCounter from "@/components/animated-counter"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useInView } from "react-intersection-observer"
+import Image from "next/image"
 
 export default function HomePage() {
   const [ref, inView] = useInView({
@@ -31,85 +32,74 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
-      <ParticleBackground />
-
+    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden flex flex-col">
       {/* Navigation */}
-      <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Beaker className="h-8 w-8 text-fuchsia-400" />
-              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-                PUMP.SCIENCE
+      <nav className="w-full bg-[#fdf6f1] border-b border-[#e5ded7] sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-20">
+          <div className="flex items-center space-x-3">
+            <Beaker className="h-8 w-8 text-[#3d2c1e]" />
+            <span className="text-2xl font-bold text-[#3d2c1e] font-serif tracking-tight">PetPals</span>
+          </div>
+          <div className="hidden md:flex items-center space-x-8 text-[#3d2c1e] font-medium">
+            <Link href="#" className="hover:text-[#a68c7c] transition-colors">About</Link>
+            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Care</Link>
+            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Medical</Link>
+            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Accessories</Link>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search"
+                className="rounded-xl bg-[#f3ede7] px-4 py-2 text-[#3d2c1e] placeholder-[#a68c7c] focus:outline-none focus:ring-2 focus:ring-[#a68c7c] w-32 md:w-40"
+              />
+              <span className="absolute right-3 top-2.5 text-[#a68c7c]">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
               </span>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/projects" className="text-white/80 hover:text-fuchsia-400 transition-colors">
-                Projects
-              </Link>
-              <Link href="/create" className="text-white/80 hover:text-fuchsia-400 transition-colors">
-                Create Project
-              </Link>
-              <Link href="/dashboard" className="text-white/80 hover:text-fuchsia-400 transition-colors">
-                Dashboard
-              </Link>
-              <ConnectWalletButton />
             </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="mb-6"
-          >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400">
-                Decentralized Science
-              </span>
-              <span className="block text-white">Funding Platform</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto">
-              Turn your research into IP Assets, raise funds through tokens, and share profits automatically with Story
-              Protocol
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <Link href="/projects">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-lg px-8 py-6 rounded-xl shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
-              >
-                Explore Projects <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/create">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-fuchsia-400 text-fuchsia-400 hover:bg-fuchsia-400/10 text-lg px-8 py-6 rounded-xl transition-all duration-300"
-              >
-                Start Your Research
-              </Button>
-            </Link>
-          </motion.div>
+      <section className="relative flex-1 flex items-center justify-center py-16 md:py-28 px-4 bg-[#fdf6f1]">
+        {/* Left Animal Image */}
+        <div className="hidden md:block absolute left-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg">
+          <Image
+            src="/assets/hamster1.png"
+            alt="Cute Hamster 1"
+            width={256}
+            height={320}
+            className="object-contain w-full h-full"
+            priority
+          />
+        </div>
+        {/* Right Animal Image */}
+        <div className="hidden md:block absolute right-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg">
+          <Image
+            src="/assets/hamster2.png"
+            alt="Cute Hamster 2"
+            width={256}
+            height={320}
+            className="object-contain w-full h-full"
+            priority
+          />
+        </div>
+        {/* Paw prints */}
+        <div className="absolute left-1/4 top-1/3 text-[#e5ded7] text-3xl select-none">🐾</div>
+        <div className="absolute right-1/4 bottom-1/3 text-[#e5ded7] text-3xl select-none">🐾</div>
+        <div className="absolute left-1/3 bottom-1/4 text-[#e5ded7] text-2xl select-none">🐾</div>
+        <div className="absolute right-1/3 top-1/4 text-[#e5ded7] text-2xl select-none">🐾</div>
+        <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-extrabold font-serif text-[#3d2c1e] mb-6 leading-tight">
+            Best Pals for <br className="hidden md:block" /> Your Paw Pals
+          </h1>
+          <p className="text-lg md:text-xl text-[#a68c7c] mb-8 font-medium">
+            Your Trusted Partner in Pet Care, Offering Tailored Services to Ensure the Health, Happiness, and Well-Being of Your Beloved Furry Companions.
+          </p>
+          <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
+            Book Now
+          </Button>
         </div>
       </section>
 
@@ -124,16 +114,9 @@ export default function HomePage() {
       </div>
 
       {/* Features Section */}
-      <section className="py-20 px-4" ref={ref}>
+      <section className="py-20 px-4 bg-[#fdf6f1]" ref={ref}>
         <div className="max-w-7xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400"
-          >
-            How It Works
-          </motion.h2>
+          <h2 className="text-4xl font-bold text-center mb-16 text-[#a68c7c] font-serif">How It Works</h2>
 
           <motion.div
             variants={container}
@@ -143,55 +126,55 @@ export default function HomePage() {
           >
             <motion.div variants={item}>
               <GlowingCard
-                icon={<Sparkles className="h-12 w-12 text-fuchsia-400" />}
+                icon={<Sparkles className="h-12 w-12 text-black" />}
                 title="Register IP Assets"
                 description="Turn your research into digital assets on Story Protocol with automatic ownership tracking"
-                glowColor="fuchsia"
+                glowColor="beige"
               />
             </motion.div>
 
             <motion.div variants={item}>
               <GlowingCard
-                icon={<Zap className="h-12 w-12 text-cyan-400" />}
+                icon={<Zap className="h-12 w-12 text-black" />}
                 title="Token Fundraising"
                 description="Sell project tokens to fund research phases and share future success with investors"
-                glowColor="cyan"
+                glowColor="black"
               />
             </motion.div>
 
             <motion.div variants={item}>
               <GlowingCard
-                icon={<Atom className="h-12 w-12 text-purple-400" />}
+                icon={<Atom className="h-12 w-12 text-black" />}
                 title="Live Data Streaming"
                 description="Stream experiment results in real-time to the blockchain for transparent progress tracking"
-                glowColor="purple"
+                glowColor="white"
               />
             </motion.div>
 
             <motion.div variants={item}>
               <GlowingCard
-                icon={<Dna className="h-12 w-12 text-fuchsia-400" />}
+                icon={<Dna className="h-12 w-12 text-black" />}
                 title="Community Governance"
                 description="Token holders vote on project progression and funding allocation decisions"
-                glowColor="fuchsia"
+                glowColor="beige"
               />
             </motion.div>
 
             <motion.div variants={item}>
               <GlowingCard
-                icon={<ArrowRight className="h-12 w-12 text-cyan-400" />}
+                icon={<ArrowRight className="h-12 w-12 text-black" />}
                 title="Auto Royalties"
                 description="Automatic profit distribution to researchers, investors, and contributors via smart contracts"
-                glowColor="cyan"
+                glowColor="black"
               />
             </motion.div>
 
             <motion.div variants={item}>
               <GlowingCard
-                icon={<Beaker className="h-12 w-12 text-purple-400" />}
+                icon={<Beaker className="h-12 w-12 text-black" />}
                 title="Cross-Chain Support"
                 description="Connect to multiple blockchains for optimal trading and investment opportunities"
-                glowColor="purple"
+                glowColor="white"
               />
             </motion.div>
           </motion.div>
@@ -199,7 +182,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-black/40 via-fuchsia-900/20 to-black/40">
+      <section className="py-20 px-4 bg-[#f3ede7]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div className="p-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10 hover:border-fuchsia-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-fuchsia-500/20">
@@ -231,15 +214,13 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-black/20 backdrop-blur-xl py-12 px-4">
+      <footer className="border-t border-[#e5ded7] bg-[#fdf6f1] py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Beaker className="h-6 w-6 text-fuchsia-400" />
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-              PUMP.SCIENCE
-            </span>
+            <Beaker className="h-6 w-6 text-[#a68c7c]" />
+            <span className="text-xl font-bold text-[#a68c7c] font-serif">PetPals</span>
           </div>
-          <p className="text-white/60">Powered by Story Protocol • Decentralized Science Funding</p>
+          <p className="text-[#a68c7c]">Powered by Story Protocol • Decentralized Science Funding</p>
         </div>
       </footer>
     </div>

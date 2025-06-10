@@ -17,7 +17,7 @@ export default function ConnectWalletButton() {
 
   if (!mounted) {
     return (
-      <Button className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20">
+      <Button className="bg-gradient-to-r from-[#e7cba9] to-white hover:from-white hover:to-[#e7cba9] text-black shadow-lg shadow-black/10">
         <Wallet className="h-4 w-4 mr-2" />
         Connect Wallet
       </Button>
@@ -42,7 +42,7 @@ export default function ConnectWalletButton() {
                 ) : (
                   <Button
                     onClick={show}
-                    className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300"
+                    className="bg-gradient-to-r from-[#e7cba9] to-white hover:from-white hover:to-[#e7cba9] text-black shadow-lg shadow-black/10 transition-all duration-300"
                   >
                     <div className="flex items-center gap-2">
                       {/* @ts-ignore */}
@@ -72,7 +72,7 @@ export default function ConnectWalletButton() {
               <Button
                 onClick={show}
                 disabled={isConnecting}
-                className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300"
+                className="bg-gradient-to-r from-[#e7cba9] to-white hover:from-white hover:to-[#e7cba9] text-black shadow-lg shadow-black/10 transition-all duration-300"
               >
                 <Wallet className="h-4 w-4 mr-2" />
                 {isConnecting ? "Connecting..." : "Connect Wallet"}

@@ -50,19 +50,19 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: hsl(36, 56%, 91%); /* beige */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d946ef;
+  background: hsl(0, 0%, 10%); /* black */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c026d3;
+  background: hsl(36, 56%, 60%); /* darker beige */
 }
 
 /* Gradient text */
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[hsl(36,56%,60%)] to-[hsl(0,0%,10%)];
 }
