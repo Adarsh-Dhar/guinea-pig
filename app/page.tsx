@@ -9,12 +9,19 @@ import AnimatedCounter from "@/components/animated-counter"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useInView } from "react-intersection-observer"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 
 export default function HomePage() {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   })
+  const [showContent, setShowContent] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const container = {
     hidden: { opacity: 0 },
@@ -31,10 +38,34 @@ export default function HomePage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
   }
 
+  // Animation variants
+  const heroContainer = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.25,
+      },
+    },
+  }
+  const heroItem = {
+    hidden: { opacity: 0, y: 40 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+  }
+
   return (
-    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden flex flex-col relative">
+      {/* Loading Overlay */}
+      {!showContent && (
+        <div className="fixed inset-0 z-[999] bg-[#fdf6f1] transition-opacity duration-700"></div>
+      )}
+
       {/* Navigation */}
-      <nav className="w-full bg-[#fdf6f1] border-b border-[#e5ded7] sticky top-0 z-50">
+      <motion.nav
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showContent ? 1 : 0 }}
+        transition={{ duration: 0.7 }}
+        className="w-full bg-[#fdf6f1] border-b border-[#e5ded7] sticky top-0 z-50"
+      >
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-20">
           <div className="flex items-center space-x-3">
             <Beaker className="h-8 w-8 text-[#3d2c1e]" />
@@ -59,12 +90,20 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Hero Section */}
-      <section className="relative flex-1 flex items-center justify-center py-16 md:py-28 px-4 bg-[#fdf6f1]">
+      <motion.section
+        className="relative flex-1 flex items-center justify-center py-16 md:py-28 px-4 bg-[#fdf6f1]"
+        variants={heroContainer}
+        initial="hidden"
+        animate={showContent ? "show" : "hidden"}
+      >
         {/* Left Animal Image */}
-        <div className="hidden md:block absolute left-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg">
+        <motion.div
+          className="hidden md:block absolute left-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg"
+          variants={heroItem}
+        >
           <Image
             src="/assets/hamster1.png"
             alt="Cute Hamster 1"
@@ -73,9 +112,12 @@ export default function HomePage() {
             className="object-contain w-full h-full"
             priority
           />
-        </div>
+        </motion.div>
         {/* Right Animal Image */}
-        <div className="hidden md:block absolute right-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg">
+        <motion.div
+          className="hidden md:block absolute right-0 bottom-0 md:top-1/2 md:-translate-y-1/2 w-64 h-80 bg-[#e5ded7] rounded-3xl overflow-hidden shadow-lg"
+          variants={heroItem}
+        >
           <Image
             src="/assets/hamster2.png"
             alt="Cute Hamster 2"
@@ -84,32 +126,37 @@ export default function HomePage() {
             className="object-contain w-full h-full"
             priority
           />
-        </div>
+        </motion.div>
         {/* Paw prints */}
         <div className="absolute left-1/4 top-1/3 text-[#e5ded7] text-3xl select-none">🐾</div>
         <div className="absolute right-1/4 bottom-1/3 text-[#e5ded7] text-3xl select-none">🐾</div>
         <div className="absolute left-1/3 bottom-1/4 text-[#e5ded7] text-2xl select-none">🐾</div>
         <div className="absolute right-1/3 top-1/4 text-[#e5ded7] text-2xl select-none">🐾</div>
-        <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold font-serif text-[#3d2c1e] mb-6 leading-tight">
+        <motion.div
+          className="relative z-10 w-full max-w-2xl mx-auto text-center"
+          variants={heroContainer}
+        >
+          <motion.h1 className="text-5xl md:text-6xl font-extrabold font-serif text-[#3d2c1e] mb-6 leading-tight" variants={heroItem}>
             Best Pals for <br className="hidden md:block" /> Your Paw Pals
-          </h1>
-          <p className="text-lg md:text-xl text-[#a68c7c] mb-8 font-medium">
+          </motion.h1>
+          <motion.p className="text-lg md:text-xl text-[#a68c7c] mb-8 font-medium" variants={heroItem}>
             Your Trusted Partner in Pet Care, Offering Tailored Services to Ensure the Health, Happiness, and Well-Being of Your Beloved Furry Companions.
-          </p>
-          <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
-            Book Now
-          </Button>
-        </div>
-      </section>
+          </motion.p>
+          <motion.div variants={heroItem}>
+            <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
+              Book Now
+            </Button>
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
       {/* Animated Divider */}
       <div className="relative h-24 w-full overflow-hidden">
         <div className="absolute inset-0 flex justify-center">
-          <div className="w-full h-full bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent animate-pulse" />
+          <div className="w-full h-full bg-gradient-to-r from-transparent via-[#e5ded7] to-transparent animate-pulse" />
         </div>
         <div className="absolute inset-0 flex justify-center items-center">
-          <Dna className="h-12 w-12 text-fuchsia-400 animate-spin-slow" />
+          <Dna className="h-12 w-12 text-black animate-spin-slow" />
         </div>
       </div>
 
