@@ -27,7 +27,7 @@ model Project {
   description      String
   category         String
   tokenSymbol      String
-  totalSupply      String
+  totalSupply      String // Always set to "100" for royalty tokens (max 100 tokens per project)
   totalFunding     String
   initialPrice     String
   licenseType      String

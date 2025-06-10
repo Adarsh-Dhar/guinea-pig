@@ -25,7 +25,7 @@ export default function CreateProjectPage() {
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
   const [tokenSymbol, setTokenSymbol] = useState("")
-  const [totalSupply, setTotalSupply] = useState("")
+  const [totalSupply] = useState("100")
   const [totalFunding, setTotalFunding] = useState("")
   const [initialPrice, setInitialPrice] = useState("")
   const [licenseType, setLicenseType] = useState("")
@@ -43,6 +43,7 @@ export default function CreateProjectPage() {
   const [mintResult, setMintResult] = useState<any>(null)
   const [mintError, setMintError] = useState<string | null>(null)
   const [selectedLicense, setSelectedLicense] = useState<string>("open-academic")
+  const [formError, setFormError] = useState<string | null>(null)
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -113,6 +114,25 @@ export default function CreateProjectPage() {
     setLoading(true)
     setResult(null)
     setError(null)
+    setFormError(null)
+    // Client-side validation for funding < 100 * price
+    const price = parseFloat(initialPrice)
+    const funding = parseFloat(totalFunding)
+    if (isNaN(price) || isNaN(funding)) {
+      setFormError("Please enter valid numbers for price and funding.")
+      setLoading(false)
+      return
+    }
+    if (funding >= 100 * price) {
+      setFormError("Total funding must be less than 100 × royalty token price.")
+      setLoading(false)
+      return
+    }
+    if (funding / price !== Math.floor(funding / price)) {
+      setFormError("Total funding divided by royalty token price must be an integer (no decimals allowed).")
+      setLoading(false)
+      return
+    }
     try {
       // 1. Compose metadata
       const projectName = title
@@ -503,14 +523,13 @@ export default function CreateProjectPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="total-supply" className="text-white/80">
-                    Total Token Supply
+                    Royalty Token Supply
                   </Label>
                   <Input
                     id="total-supply"
-                    placeholder="e.g., 1,000,000"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
                     value={totalSupply}
-                    onChange={e => setTotalSupply(e.target.value)}
+                    readOnly
+                    className="bg-white/10 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20 cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -528,28 +547,37 @@ export default function CreateProjectPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="initial-price" className="text-white/80">
+                    Royalty Token Price (per token)
+                  </Label>
+                  <Input
+                    id="initial-price"
+                    placeholder="e.g., 1000"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    value={initialPrice}
+                    onChange={e => setInitialPrice(e.target.value)}
+                    type="number"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="total-funding" className="text-white/80">
                     Total Funding Target
                   </Label>
                   <Input
                     id="total-funding"
-                    placeholder="e.g., $750,000"
+                    placeholder="e.g., 75000"
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
                     value={totalFunding}
                     onChange={e => setTotalFunding(e.target.value)}
+                    type="number"
+                    min="0"
+                    step="any"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="initial-price" className="text-white/80">
-                    Initial Token Price
-                  </Label>
-                  <Input
-                    id="initial-price"
-                    placeholder="e.g., $0.75"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
-                    value={initialPrice}
-                    onChange={e => setInitialPrice(e.target.value)}
-                  />
+                  <div className="text-xs text-white/60 mt-1">
+                    You can raise up to <span className="font-semibold text-fuchsia-400">{initialPrice ? 100 * parseFloat(initialPrice) : '...'}</span> (100 × token price)
+                  </div>
                 </div>
               </div>
 
@@ -783,6 +811,11 @@ export default function CreateProjectPage() {
           {error && (
             <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
               <span className="font-semibold">Error:</span> {error}
+            </div>
+          )}
+          {formError && (
+            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+              <span className="font-semibold">Error:</span> {formError}
             </div>
           )}
         </motion.form>

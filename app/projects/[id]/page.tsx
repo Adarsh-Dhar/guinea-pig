@@ -2,22 +2,19 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Vote, Activity, ChevronUp, ChevronDown, Sparkles, Dna } from "lucide-react"
+import { motion } from "framer-motion"
+import { ArrowLeft, Vote, Activity, ChevronUp, ChevronDown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ParticleBackground from "@/components/particle-background"
-import { LineChart } from "@/components/line-chart"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useParams } from "next/navigation"
-import { client, publicClient, walletClient } from "@/lib/config"
+import { client, publicClient } from "@/lib/config"
 import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 import { erc20Abi } from "viem"
-import { aeneid } from "@story-protocol/core-sdk";
-import { storyAeneid } from "viem/chains"
 import ReviewModal from "@/components/ui/review-modal"
 
 // Helper for BigInt exponentiation (works in all JS targets)
@@ -27,20 +24,6 @@ function bigIntPow(base: bigint, exp: number): bigint {
   return result;
 }
 
-// Minimal ERC721 ABI for safeTransferFrom
-const erc721Abi = [
-  {
-    "inputs": [
-      { "internalType": "address", "name": "from", "type": "address" },
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
-    ],
-    "name": "safeTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -200,24 +183,6 @@ export default function ProjectDetailPage() {
     setExpanded(!expanded)
   }
 
-  const triggerVoteAnimation = () => {
-    setVoteAnimation(true)
-    setTimeout(() => setVoteAnimation(false), 1000)
-  }
-
-  const chartData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    datasets: [
-      {
-        label: "Token Price",
-        data: [0.75, 0.9, 1.2, 1.5, 1.7, 1.89],
-        borderColor: "rgb(217, 70, 239)",
-        backgroundColor: "rgba(217, 70, 239, 0.2)",
-        tension: 0.4,
-      },
-    ],
-  }
-
   const handleBuy = async () => {
     const recipientAddress = project.project.creatorAddress;
     console.log("recipientAddress", recipientAddress);
@@ -226,7 +191,7 @@ export default function ProjectDetailPage() {
       return;
     }
     try {
-      // 1. Send ETH proportional to quantity
+      // 1. Send ETH equal to project.project.tokenPrice
       if (typeof window !== "undefined" && window.ethereum) {
         await window.ethereum.request({
           method: "eth_sendTransaction",
@@ -234,16 +199,16 @@ export default function ProjectDetailPage() {
             {
               from: userWalletAddress,
               to: recipientAddress,
-              value: parseEther(quantity.toString()).toString(16), // hex string, quantity * 1 ETH
+              value: parseEther((project.project.tokenPrice || 0).toString()).toString(16), // hex string, 1 tokenPrice ETH
             },
           ],
         });
-        console.log(`${quantity} ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.`);
+        console.log(`ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.`);
       } else {
         console.error("No Ethereum provider found.");
         return;
       }
-      // 2. Transfer royalty tokens (RT/IP) proportional to quantity using SDK
+      // 2. Transfer 1 royalty token (RT/IP) using SDK
       if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
         const royaltyTokenAddress = project.project.royaltyToken.address;
         // Get decimals
@@ -253,19 +218,18 @@ export default function ProjectDetailPage() {
           functionName: "decimals",
         });
         const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
-        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
         const response = await client.ipAccount.transferErc20({
           ipId: project.project.ipId,
           tokens: [{
             address: royaltyTokenAddress,
-            amount: totalAmount,
+            amount: oneToken,
             target: userWalletAddress,
           }],
           txOptions: {
             waitForTransaction: true,
           },
         });
-        console.log(`${quantity} royalty token(s) (IP) transferred. Tx hash: ${response.txHash}`);
+        console.log(`1 royalty token (IP) transferred. Tx hash: ${response.txHash}`);
         if (response.receipt) {
           console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
         }
@@ -721,7 +685,7 @@ export default function ProjectDetailPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
                     <div className="text-white/70 mb-1">Token Price</div>
-                    <div className="text-white text-lg font-bold">{p.initialPrice || '-'}</div>
+                    <div className="text-fuchsia-400 font-bold">{p.tokenPrice || 1}</div>
                   </motion.div>
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
                     <div className="text-white/70 mb-1">24h Change</div>

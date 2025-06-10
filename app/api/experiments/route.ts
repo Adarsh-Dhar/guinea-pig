@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
       description,
       category,
       tokenSymbol,
-      totalSupply,
       totalFunding,
       initialPrice,
       licenseType,
@@ -46,14 +45,24 @@ export async function POST(req: NextRequest) {
     } = body
     console.log("body", body)
 
+    // Enforce max 100 royalty tokens and funding constraint
+    const price = parseFloat(initialPrice)
+    const funding = parseFloat(totalFunding)
+    if (isNaN(price) || isNaN(funding)) {
+      return NextResponse.json({ error: 'Invalid price or funding amount' }, { status: 400 })
+    }
+    if (funding >= 100 * price) {
+      return NextResponse.json({ error: 'Total funding must be less than 100 × royalty token price' }, { status: 400 })
+    }
+    if (funding / price !== Math.floor(funding / price)) {
+      return NextResponse.json({ error: 'Total funding divided by royalty token price must be an integer (no decimals allowed)' }, { status: 400 })
+    }
+    const totalSupply = "100" // Always 100 royalty tokens
+
     // Ensure the creator exists in the User table
-    let creator = await prisma.user.findUnique({
-      where: { address: creatorAddress }
-    });
+    let creator = await prisma.user.findUnique({ where: { address: creatorAddress } });
     if (!creator) {
-      creator = await prisma.user.create({
-        data: { address: creatorAddress }
-      });
+      creator = await prisma.user.create({ data: { address: creatorAddress } });
     }
 
     const project = await prisma.project.create({
@@ -62,9 +71,9 @@ export async function POST(req: NextRequest) {
         description,
         category,
         tokenSymbol,
-        status: "PENDING", // Add default status
-        currentFunding: "0", // Add initial funding
-        tokenPrice: initialPrice, // Map initialPrice to tokenPrice
+        status: "PENDING",
+        currentFunding: "0",
+        tokenPrice: initialPrice,
         totalSupply,
         totalFunding,
         initialPrice,
