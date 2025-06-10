@@ -120,7 +120,7 @@ export default function ProjectDetailPage() {
         setGovError("Failed to fetch proposals");
         setGovLoading(false);
       });
-  }, [ refreshGov]);
+  }, [project?.project?.id, refreshGov]);
 
   // Fetch user token balance for eligibility
   useEffect(() => {

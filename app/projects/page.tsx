@@ -35,11 +35,12 @@ export default function ProjectsPage() {
   }, [])
 
   const filteredProjects = projects.filter((project) => {
-    const category = project.category || "Other"
-    const title = project.title || project.name || "Untitled Project"
-    const matchesCategory = selectedCategory === "All" || category === selectedCategory
-    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+    const category = (project.category || "Other").toLowerCase();
+    const selected = selectedCategory.toLowerCase();
+    const title = project.title || project.name || "Untitled Project";
+    const matchesCategory = selected === "all" || category === selected;
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   })
 
   const container = {
@@ -185,7 +186,7 @@ export default function ProjectsPage() {
               const title = project.title || `Project #${idx+1}`
               const description = project.description || "No description."
               const token = project.tokenSymbol || "$TOKEN"
-              const raised = 0
+              const raised = Number(project.currentFunding) || 0
               const target = Number(project.totalFunding) || 1000000
               const investors = 0
               const phase = "Phase 1"
@@ -230,7 +231,7 @@ export default function ProjectsPage() {
                         <div className="relative h-2 w-full bg-[#e5ded7] rounded-full overflow-hidden">
                           <div
                             className="absolute top-0 left-0 h-full bg-[#a68c7c] rounded-full"
-                            style={{ width: `${(raised / target) * 100}%` }}
+                            style={{ width: `${target > 0 ? (raised / target) * 100 : 0}%` }}
                           >
                             <div
                               className="absolute top-0 left-0 h-full w-full bg-[#a68c7c] animate-pulse opacity-60"
