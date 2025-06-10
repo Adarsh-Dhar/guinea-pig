@@ -79,10 +79,9 @@ export default function HomePage() {
             <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea-pig</span>
           </div>
           <div className="hidden md:flex items-center space-x-8 text-[#3d2c1e] font-medium">
-            <Link href="#" className="hover:text-[#a68c7c] transition-colors">About</Link>
-            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Care</Link>
-            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Medical</Link>
-            <Link href="#" className="hover:text-[#a68c7c] transition-colors">Pet Accessories</Link>
+            <Link href="/projects" className="hover:text-[#a68c7c] transition-colors">Projects</Link>
+            <Link href="/create" className="hover:text-[#a68c7c] transition-colors">Create</Link>
+            <Link href="/dashboard" className="hover:text-[#a68c7c] transition-colors">Dashboard</Link>
           </div>
           <div className="flex items-center space-x-2">
             <div className="relative">
@@ -144,10 +143,10 @@ export default function HomePage() {
           variants={heroContainer}
         >
           <motion.h1 className="text-5xl md:text-6xl font-extrabold font-serif text-[#3d2c1e] mb-6 leading-tight" variants={heroItem}>
-            Best Pals for <br className="hidden md:block" /> Your Paw Pals
+            Fund Science, Own the Future
           </motion.h1>
           <motion.p className="text-lg md:text-xl text-[#a68c7c] mb-8 font-medium" variants={heroItem}>
-            Your Trusted Partner in Pet Care, Offering Tailored Services to Ensure the Health, Happiness, and Well-Being of Your Beloved Furry Companions.
+            Join a global community funding and governing scientific breakthroughs.
           </motion.p>
           <motion.div variants={heroItem}>
             <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
@@ -156,6 +155,9 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
       </motion.section>
+
+      {/* Gap before DNA Divider */}
+      <div className="mt-24" />
 
       {/* Animated Divider */}
       <div className="relative h-24 w-full overflow-hidden">
@@ -239,29 +241,29 @@ export default function HomePage() {
       <section className="py-20 px-4 bg-[#f3ede7]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div className="p-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10 hover:border-fuchsia-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-fuchsia-500/20">
-              <div className="text-4xl font-bold text-white mb-2">
+            <div className="p-8 bg-[#fdf6f1] rounded-2xl border border-[#e5ded7] shadow-sm">
+              <div className="text-4xl md:text-5xl font-serif font-medium text-[#3d2c1e] mb-2">
                 <AnimatedCounter value={2400000} prefix="$" abbreviate />
               </div>
-              <div className="text-fuchsia-300">Total Funding Raised</div>
+              <div className="text-base md:text-lg font-serif font-medium text-[#3d2c1e] opacity-80">Total Funding Raised</div>
             </div>
-            <div className="p-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20">
-              <div className="text-4xl font-bold text-white mb-2">
+            <div className="p-8 bg-[#fdf6f1] rounded-2xl border border-[#e5ded7] shadow-sm">
+              <div className="text-4xl md:text-5xl font-serif font-medium text-[#3d2c1e] mb-2">
                 <AnimatedCounter value={127} />
               </div>
-              <div className="text-cyan-300">Active Projects</div>
+              <div className="text-base md:text-lg font-serif font-medium text-[#3d2c1e] opacity-80">Active Projects</div>
             </div>
-            <div className="p-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20">
-              <div className="text-4xl font-bold text-white mb-2">
+            <div className="p-8 bg-[#fdf6f1] rounded-2xl border border-[#e5ded7] shadow-sm">
+              <div className="text-4xl md:text-5xl font-serif font-medium text-[#3d2c1e] mb-2">
                 <AnimatedCounter value={3421} />
               </div>
-              <div className="text-purple-300">Researchers</div>
+              <div className="text-base md:text-lg font-serif font-medium text-[#3d2c1e] opacity-80">Researchers</div>
             </div>
-            <div className="p-6 backdrop-blur-lg bg-white/5 rounded-2xl border border-white/10 hover:border-fuchsia-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-fuchsia-500/20">
-              <div className="text-4xl font-bold text-white mb-2">
+            <div className="p-8 bg-[#fdf6f1] rounded-2xl border border-[#e5ded7] shadow-sm">
+              <div className="text-4xl md:text-5xl font-serif font-medium text-[#3d2c1e] mb-2">
                 <AnimatedCounter value={89} suffix="%" />
               </div>
-              <div className="text-fuchsia-300">Success Rate</div>
+              <div className="text-base md:text-lg font-serif font-medium text-[#3d2c1e] opacity-80">Success Rate</div>
             </div>
           </div>
         </div>
@@ -272,9 +274,11 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Beaker className="h-6 w-6 text-[#a68c7c]" />
-            <span className="text-xl font-bold text-[#a68c7c] font-serif">PetPals</span>
+            <span className="text-xl font-bold text-[#a68c7c] font-serif">guinea pig</span>
           </div>
-          <p className="text-[#a68c7c]">Powered by Story Protocol • Decentralized Science Funding</p>
+          <p className="text-[#a68c7c]">
+            Empowering global research through decentralized funding and transparent ownership.
+          </p>
         </div>
       </footer>
     </div>
