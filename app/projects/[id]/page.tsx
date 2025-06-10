@@ -159,16 +159,16 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950">
-        <span className="text-white text-xl animate-pulse">Loading project...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf6f1]">
+        <span className="text-[#3d2c1e] text-xl animate-pulse">Loading project...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950">
-        <span className="text-red-400 text-xl">{error}</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf6f1]">
+        <span className="text-[#bfa07a] text-xl">{error}</span>
       </div>
     );
   }
@@ -360,7 +360,7 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
+    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden">
       <ParticleBackground />
 
       {/* Navigation */}
@@ -368,13 +368,13 @@ export default function ProjectDetailPage() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50"
+        className="border-b border-[#e5ded7] bg-[#fdf6f1]/80 backdrop-blur-xl sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/projects" className="flex items-center space-x-2">
-              <ArrowLeft className="h-5 w-5 text-fuchsia-400" />
-              <span className="text-xl font-bold text-white">Back to Projects</span>
+              <ArrowLeft className="h-5 w-5 text-[#a68c7c]" />
+              <span className="text-xl font-bold text-[#3d2c1e]">Back to Projects</span>
             </Link>
             <ConnectWalletButton />
           </div>
@@ -390,7 +390,7 @@ export default function ProjectDetailPage() {
           className="mb-8"
         >
           <div className="flex items-center space-x-4 mb-4">
-            <Badge className="bg-gradient-to-r from-fuchsia-600 to-fuchsia-400 text-white px-3 py-1 rounded-full">
+            <Badge className="bg-[#a68c7c] text-[#3d2c1e] px-3 py-1 rounded-full">
               {p.category || "-"}
             </Badge>
             <Badge className="border-green-400 text-green-400 px-3 py-1 rounded-full" variant="outline">
@@ -399,15 +399,15 @@ export default function ProjectDetailPage() {
             <motion.span
               initial={{ scale: 1 }}
               whileHover={{ scale: 1.05 }}
-              className="text-fuchsia-400 font-mono font-bold bg-fuchsia-400/10 px-3 py-1 rounded-full"
+              className="text-[#a68c7c] font-mono font-bold bg-[#a68c7c]/10 px-3 py-1 rounded-full"
             >
               {p.tokenSymbol ? `$${p.tokenSymbol}` : "-"}
             </motion.span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#3d2c1e]">
             {p.title || "Untitled Project"}
           </h1>
-          <p className="text-white/80 text-lg max-w-3xl">
+          <p className="text-[#8c715c] text-lg max-w-3xl">
             {p.description || "No description provided."}
           </p>
         </motion.div>
@@ -421,42 +421,42 @@ export default function ProjectDetailPage() {
             className="lg:col-span-2"
           >
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="bg-white/5 border border-white/10 rounded-xl p-1">
+              <TabsList className="bg-[#f3ede7] border border-[#e5ded7] rounded-xl p-1">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white rounded-lg"
+                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="data"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-cyan-500 data-[state=active]:text-white rounded-lg"
+                  className="text-black data-[state=active]:bg-[#e5ded7] data-[state=active]:text-black rounded-lg"
                 >
                   Live Data
                 </TabsTrigger>
                 <TabsTrigger
                   value="governance"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-500 data-[state=active]:text-white rounded-lg"
+                  className="text-black data-[state=active]:bg-[#f3ede7] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Governance
                 </TabsTrigger>
                 <TabsTrigger
                   value="tokenomics"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white rounded-lg"
+                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Tokenomics
                 </TabsTrigger>
                 <TabsTrigger
                   value="peer-review"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white rounded-lg"
+                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Peer Review
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-                  <h3 className="text-white text-xl font-bold mb-4">Milestones</h3>
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
+                  <h3 className="text-[#3d2c1e] text-xl font-bold mb-4">Milestones</h3>
                   <div className="space-y-4">
                     {Array.isArray(p.milestones) && p.milestones.length > 0 ? (
                       p.milestones.map((m: any, i: number) => (
@@ -471,75 +471,75 @@ export default function ProjectDetailPage() {
                             </div>
                             <span className="text-green-400 font-medium">{m.title}</span>
                           </div>
-                          <Badge className="bg-green-500 text-white">{m.funding}</Badge>
+                          <Badge className="bg-green-500 text-[#3d2c1e]">{m.funding}</Badge>
                         </motion.div>
                       ))
                     ) : (
-                      <div className="text-white/60">No milestones available.</div>
+                      <div className="text-[#8c715c]">No milestones available.</div>
                     )}
                   </div>
                 </Card>
 
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-                  <h3 className="text-white text-xl font-bold mb-4">IP Asset Details</h3>
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
+                  <h3 className="text-[#3d2c1e] text-xl font-bold mb-4">IP Asset Details</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                      <span className="text-white/70">IP Asset ID:</span>
+                    <div className="flex justify-between items-center p-3 bg-[#f3ede7]/5 rounded-lg">
+                      <span className="text-[#8c715c]">IP Asset ID:</span>
                       <motion.span
                         whileHover={{ scale: 1.05 }}
-                        className="text-white font-mono bg-fuchsia-500/10 px-3 py-1 rounded-full"
+                        className="text-[#a68c7c] font-mono bg-fuchsia-500/10 px-3 py-1 rounded-full"
                       >
                         {p.nftContract || "-"}
                       </motion.span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                      <span className="text-white/70">Story Protocol License:</span>
-                      <Badge className="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white">
+                    <div className="flex justify-between items-center p-3 bg-[#f3ede7]/5 rounded-lg">
+                      <span className="text-[#8c715c]">Story Protocol License:</span>
+                      <Badge className="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-[#3d2c1e]">
                         {p.licenseType || "-"}
                       </Badge>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                      <span className="text-white/70">Royalty Rate:</span>
-                      <span className="text-white font-bold">{p.royaltyRate ? `${p.royaltyRate}%` : "-"}</span>
+                    <div className="flex justify-between items-center p-3 bg-[#f3ede7]/5 rounded-lg">
+                      <span className="text-[#8c715c]">Royalty Rate:</span>
+                      <span className="text-[#3d2c1e] font-bold">{p.royaltyRate ? `${p.royaltyRate}%` : "-"}</span>
                     </div>
                   </div>
                 </Card>
               </TabsContent>
 
               <TabsContent value="data" className="space-y-6">
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
                   <div className="flex items-center mb-4">
-                    <Activity className="h-6 w-6 text-cyan-400 mr-2" />
-                    <h3 className="text-white text-xl font-bold">Live Experiment Data</h3>
+                    <Activity className="h-6 w-6 text-[#a68c7c] mr-2" />
+                    <h3 className="text-[#3d2c1e] text-xl font-bold">Live Experiment Data</h3>
                   </div>
-                  <div className="text-white/70">No live data available.</div>
+                  <div className="text-[#8c715c]">No live data available.</div>
                 </Card>
               </TabsContent>
 
               <TabsContent value="governance" className="space-y-6">
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
                   <div className="flex items-center mb-4">
-                    <Vote className="h-6 w-6 text-purple-400 mr-2" />
-                    <h3 className="text-white text-xl font-bold">Active Proposals</h3>
+                    <Vote className="h-6 w-6 text-[#a68c7c] mr-2" />
+                    <h3 className="text-[#3d2c1e] text-xl font-bold">Active Proposals</h3>
                     {isConnected && userTokenBalance >= 5 && (
-                      <Button className="ml-auto bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white" onClick={() => setShowCreate(true)}>
+                      <Button className="ml-auto bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]" onClick={() => setShowCreate(true)}>
                         Create Proposal
                       </Button>
                     )}
                   </div>
-                  {govError && <div className="text-red-400 mb-2">{govError}</div>}
+                  {govError && <div className="text-[#bfa07a] mb-2">{govError}</div>}
                   {showCreate && (
                     <div className="mb-6 p-4 bg-black/40 rounded-xl border border-fuchsia-700/30">
                       <input
                         ref={proposalTitleRef}
-                        className="w-full mb-2 px-3 py-2 rounded bg-white/10 text-white placeholder:text-white/40 border border-fuchsia-700/30 focus:outline-none"
+                        className="w-full mb-2 px-3 py-2 rounded bg-[#f3ede7]/10 text-[#3d2c1e] placeholder:text-[#8c715c] border border-fuchsia-700/30 focus:outline-none"
                         placeholder="Proposal Title"
                         value={newProposal.title}
                         onChange={e => setNewProposal({ ...newProposal, title: e.target.value })}
                         disabled={creating}
                       />
                       <textarea
-                        className="w-full mb-2 px-3 py-2 rounded bg-white/10 text-white placeholder:text-white/40 border border-fuchsia-700/30 focus:outline-none"
+                        className="w-full mb-2 px-3 py-2 rounded bg-[#f3ede7]/10 text-[#3d2c1e] placeholder:text-[#8c715c] border border-fuchsia-700/30 focus:outline-none"
                         placeholder="Proposal Description"
                         value={newProposal.description}
                         onChange={e => setNewProposal({ ...newProposal, description: e.target.value })}
@@ -547,7 +547,7 @@ export default function ProjectDetailPage() {
                         rows={3}
                       />
                       <div className="flex gap-2">
-                        <Button className="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white" onClick={handleCreateProposal} disabled={creating || !newProposal.title.trim()}>
+                        <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]" onClick={handleCreateProposal} disabled={creating || !newProposal.title.trim()}>
                           {creating ? "Creating..." : "Submit"}
                         </Button>
                         <Button variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>Cancel</Button>
@@ -555,37 +555,37 @@ export default function ProjectDetailPage() {
                     </div>
                   )}
                   {govLoading ? (
-                    <div className="text-white/70">Loading proposals...</div>
+                    <div className="text-[#8c715c]">Loading proposals...</div>
                   ) : proposals.length === 0 ? (
-                    <div className="text-white/60">No governance proposals available.</div>
+                    <div className="text-[#8c715c]">No governance proposals available.</div>
                   ) : (
                     <div className="space-y-6">
                       {proposals.map((proposal: any) => (
                         <Card key={proposal.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
                           <div className="flex items-center mb-2">
                             <span className="text-purple-400 font-bold text-lg mr-2">{proposal.title}</span>
-                            <Badge className="ml-2 bg-purple-700/40 text-white">{proposal.status}</Badge>
+                            <Badge className="ml-2 bg-purple-700/40 text-[#3d2c1e]">{proposal.status}</Badge>
                           </div>
-                          <div className="text-white/80 mb-2">{proposal.description}</div>
+                          <div className="text-[#8c715c] mb-2">{proposal.description}</div>
                           <div className="flex gap-4 items-center mb-2">
-                            <span className="text-white/60 text-sm">Ends: {new Date(proposal.endsAt).toLocaleString()}</span>
+                            <span className="text-[#8c715c] text-sm">Ends: {new Date(proposal.endsAt).toLocaleString()}</span>
                           </div>
                           <div className="flex gap-4 items-center mb-2">
                             <span className="text-green-400 font-mono">For: {proposal.votes.filter((v: any) => v.choice === 'for').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
                             <span className="text-red-400 font-mono">Against: {proposal.votes.filter((v: any) => v.choice === 'against').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
-                            <span className="text-cyan-400 font-mono">Quorum: 20</span>
+                            <span className="text-[#a68c7c] font-mono">Quorum: 20</span>
                           </div>
                           {proposal.status === 'active' && isConnected && (
                             <div className="flex gap-2 mt-2">
                               <Button
-                                className="bg-gradient-to-r from-green-600 to-green-400 text-white"
+                                className="bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                                 onClick={() => handleVote(proposal.id, 'for')}
                                 disabled={voting === proposal.id || proposal.votes.some((v: any) => v.userId === userWalletAddress)}
                               >
                                 Vote For
                               </Button>
                               <Button
-                                className="bg-gradient-to-r from-red-600 to-red-400 text-white"
+                                className="bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                                 onClick={() => handleVote(proposal.id, 'against')}
                                 disabled={voting === proposal.id || proposal.votes.some((v: any) => v.userId === userWalletAddress)}
                               >
@@ -601,58 +601,58 @@ export default function ProjectDetailPage() {
               </TabsContent>
 
               <TabsContent value="tokenomics" className="space-y-6">
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-                  <h3 className="text-white text-xl font-bold mb-4">Tokenomics</h3>
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
+                  <h3 className="text-[#3d2c1e] text-xl font-bold mb-4">Tokenomics</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-white font-medium">Token Symbol</span>
-                      <span className="text-fuchsia-400 font-bold">{p.tokenSymbol || "-"}</span>
+                      <span className="text-[#3d2c1e] font-medium">Token Symbol</span>
+                      <span className="text-[#a68c7c] font-bold">{p.tokenSymbol || "-"}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white font-medium">Total Supply</span>
-                      <span className="text-fuchsia-400 font-bold">{p.totalSupply || "-"}</span>
+                      <span className="text-[#3d2c1e] font-medium">Total Supply</span>
+                      <span className="text-[#a68c7c] font-bold">{p.totalSupply || "-"}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white font-medium">Initial Price</span>
-                      <span className="text-fuchsia-400 font-bold">{p.initialPrice || "-"}</span>
+                      <span className="text-[#3d2c1e] font-medium">Initial Price</span>
+                      <span className="text-[#a68c7c] font-bold">{p.initialPrice || "-"}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white font-medium">Total Funding</span>
-                      <span className="text-fuchsia-400 font-bold">{p.totalFunding || "-"}</span>
+                      <span className="text-[#3d2c1e] font-medium">Total Funding</span>
+                      <span className="text-[#a68c7c] font-bold">{p.totalFunding || "-"}</span>
                     </div>
                   </div>
                 </Card>
               </TabsContent>
 
               <TabsContent value="peer-review" className="space-y-6">
-                <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
                   <div className="flex items-center mb-4">
-                    <h3 className="text-white text-xl font-bold">Open Peer Reviews</h3>
+                    <h3 className="text-[#3d2c1e] text-xl font-bold">Open Peer Reviews</h3>
                     {isConnected && (
-                      <Button className="ml-auto bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white"
+                      <Button className="ml-auto bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                         onClick={() => setShowReviewModal(true)}>
                         Submit Review
                       </Button>
                     )}
                   </div>
-                  {reviewError && <div className="text-red-400 mb-2">{reviewError}</div>}
+                  {reviewError && <div className="text-[#bfa07a] mb-2">{reviewError}</div>}
                   {reviews.length === 0 ? (
-                    <div className="text-white/60">No reviews yet. Be the first to review!</div>
+                    <div className="text-[#8c715c]">No reviews yet. Be the first to review!</div>
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review: any) => (
                         <Card key={review.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-fuchsia-400 font-mono">{review.reviewer?.address?.slice(0, 6)}...{review.reviewer?.address?.slice(-4)}</span>
-                            <span className="text-white/40 text-xs">{new Date(review.createdAt).toLocaleString()}</span>
+                            <span className="text-purple-400 font-mono">{review.reviewer?.address?.slice(0, 6)}...{review.reviewer?.address?.slice(-4)}</span>
+                            <span className="text-[#8c715c] text-xs">{new Date(review.createdAt).toLocaleString()}</span>
                             {review.rewarded && <span className="ml-2 text-green-400">Rewarded</span>}
                           </div>
-                          <div className="mt-2 text-white/90">{review.content}</div>
+                          <div className="mt-2 text-[#3d2c1e]">{review.content}</div>
                           <div className="flex gap-2 mt-2">
                             <span className="text-yellow-400">Rating: {review.rating}/5</span>
                             <Button
                               size="sm"
-                              className="bg-gradient-to-r from-green-600 to-green-400 text-white"
+                              className="bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                               onClick={() => voteReview(review.id, 1)}
                               disabled={review.votes.some((v: any) => v.voterId === userWalletAddress)}
                             >
@@ -660,13 +660,13 @@ export default function ProjectDetailPage() {
                             </Button>
                             <Button
                               size="sm"
-                              className="bg-gradient-to-r from-red-600 to-red-400 text-white"
+                              className="bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                               onClick={() => voteReview(review.id, -1)}
                               disabled={review.votes.some((v: any) => v.voterId === userWalletAddress)}
                             >
                               👎
                             </Button>
-                            <span className="text-white/60">{review.votes.reduce((acc: number, v: any) => acc + v.value, 0)} votes</span>
+                            <span className="text-[#8c715c]">{review.votes.reduce((acc: number, v: any) => acc + v.value, 0)} votes</span>
                           </div>
                         </Card>
                       ))}
@@ -692,57 +692,57 @@ export default function ProjectDetailPage() {
             className="space-y-6"
           >
             {/* Investment Card */}
-            <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-              <h3 className="text-white text-xl font-bold mb-4">Investment Details</h3>
+            <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
+              <h3 className="text-[#3d2c1e] text-xl font-bold mb-4">Investment Details</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/70">Funding Progress</span>
-                    <span className="text-white">{p.currentFunding ? `$${p.currentFunding} / $${p.totalFunding}` : `0 / $${p.totalFunding || '-'}`}</span>
+                    <span className="text-[#8c715c]">Funding Progress</span>
+                    <span className="text-[#3d2c1e]">{p.currentFunding ? `$${p.currentFunding} / $${p.totalFunding}` : `0 / $${p.totalFunding || '-'}`}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
-                    <div className="text-white/70 mb-1">Token Price</div>
-                    <div className="text-fuchsia-400 font-bold">{p.tokenPrice || 1}</div>
+                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
+                    <div className="text-[#8c715c] mb-1">Token Price</div>
+                    <div className="text-[#a68c7c] font-bold">{p.tokenPrice || 1}</div>
                   </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-white/5 rounded-lg text-center">
-                    <div className="text-white/70 mb-1">24h Change</div>
+                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
+                    <div className="text-[#8c715c] mb-1">24h Change</div>
                     <div className="text-green-400 text-lg font-bold">-</div>
                   </motion.div>
                 </div>
                 <div className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-white">Your Investment</span>
-                    <span className="text-fuchsia-400 font-mono">-</span>
+                    <span className="text-[#3d2c1e]">Your Investment</span>
+                    <span className="text-[#a68c7c] font-mono">-</span>
                   </div>
-                  <div className="text-white/70 text-sm">Connect your wallet to invest</div>
+                  <div className="text-[#8c715c] text-sm">Connect your wallet to invest</div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-white/70 text-sm">
+                  <span className="text-[#8c715c] text-sm">
                     {`You will spend ${(p.tokenPrice ? (Number(p.tokenPrice) * quantity).toFixed(4) : (1 * quantity).toFixed(4))} IP for ${quantity} RT`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <button
-                    className="px-3 py-1 rounded-l-lg bg-fuchsia-700/30 text-white font-bold text-lg hover:bg-fuchsia-700/50 transition disabled:opacity-50"
+                    className="px-3 py-1 rounded-l-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition disabled:opacity-50"
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
                     disabled={quantity === 1}
                     aria-label="Decrease quantity"
                   >
                     -
                   </button>
-                  <span className="px-4 py-1 bg-fuchsia-900/30 text-white font-mono text-lg border border-fuchsia-700/40">
+                  <span className="px-4 py-1 bg-fuchsia-900/30 text-[#3d2c1e] font-mono text-lg border border-fuchsia-700/40">
                     {quantity}
                   </span>
                   <button
-                    className="px-3 py-1 rounded-r-lg bg-fuchsia-700/30 text-white font-bold text-lg hover:bg-fuchsia-700/50 transition"
+                    className="px-3 py-1 rounded-r-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition"
                     onClick={() => setQuantity(q => q + 1)}
                     aria-label="Increase quantity"
                   >
                     +
                   </button>
-                  <Button className="flex-1 ml-4 bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20 transition-all duration-300 hover:shadow-xl hover:shadow-fuchsia-700/30"
+                  <Button className="flex-1 ml-4 bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
                     onClick={handleBuy}
                   >
                     Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
@@ -752,15 +752,15 @@ export default function ProjectDetailPage() {
             </Card>
 
             {/* Stats Card */}
-            <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-white text-xl font-bold">Project Stats</h3>
-                <button onClick={toggleExpand} className="text-white/70 hover:text-white">
+                <h3 className="text-[#3d2c1e] text-xl font-bold">Project Stats</h3>
+                <button onClick={toggleExpand} className="text-[#8c715c] hover:text-[#3d2c1e]">
                   {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
               </div>
               <div className="space-y-3">
-                <div className="text-white/60">No stats available.</div>
+                <div className="text-[#8c715c]">No stats available.</div>
               </div>
             </Card>
           </motion.div>

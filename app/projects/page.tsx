@@ -58,7 +58,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
+    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden">
       <ParticleBackground />
 
       {/* Navigation */}
@@ -66,21 +66,17 @@ export default function ProjectsPage() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50"
+        className="border-b border-[#e5ded7] bg-[#fdf6f1]/80 backdrop-blur-xl sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <ArrowLeft className="h-5 w-5 text-fuchsia-400" />
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-                PUMP.SCIENCE
-              </span>
+              <ArrowLeft className="h-5 w-5 text-[#a68c7c]" />
+              <span className="text-xl font-bold text-[#3d2c1e]">PUMP.SCIENCE</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Link href="/create">
-                <Button className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20">
-                  Create Project
-                </Button>
+                <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white shadow-lg">Create Project</Button>
               </Link>
               <ConnectWalletButton />
             </div>
@@ -95,10 +91,8 @@ export default function ProjectsPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-            Research Projects
-          </h1>
-          <p className="text-white/80 text-lg">Discover and invest in cutting-edge scientific research</p>
+          <h1 className="text-4xl font-bold mb-4 text-[#a68c7c]">Research Projects</h1>
+          <p className="text-[#3d2c1e]/80 text-lg">Discover and invest in cutting-edge scientific research</p>
         </motion.div>
 
         {/* Search and Filters */}
@@ -109,22 +103,22 @@ export default function ProjectsPage() {
           className="mb-8 flex flex-col md:flex-row gap-4"
         >
           <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#a68c7c] h-5 w-5" />
             <Input
               placeholder="Search projects..."
-              className="pl-10 bg-white/5 border-white/10 text-white rounded-xl focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+              className="pl-10 bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] rounded-xl focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-            <Filter className="text-white/50 h-5 w-5 flex-shrink-0" />
+            <Filter className="text-[#a68c7c] h-5 w-5 flex-shrink-0" />
             <Badge
               variant={selectedCategory === "All" ? "default" : "outline"}
               className={
                 selectedCategory === "All"
-                  ? "bg-gradient-to-r from-fuchsia-600 to-cyan-600 text-white cursor-pointer"
-                  : "border-white/20 text-white/80 hover:border-fuchsia-400 cursor-pointer"
+                  ? "bg-[#a68c7c] text-white cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
               }
               onClick={() => setSelectedCategory("All")}
             >
@@ -134,8 +128,8 @@ export default function ProjectsPage() {
               variant={selectedCategory === "Longevity" ? "default" : "outline"}
               className={
                 selectedCategory === "Longevity"
-                  ? "bg-fuchsia-600 text-white cursor-pointer"
-                  : "border-white/20 text-white/80 hover:border-fuchsia-400 cursor-pointer"
+                  ? "bg-[#e5ded7] text-[#3d2c1e] cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
               }
               onClick={() => setSelectedCategory("Longevity")}
             >
@@ -145,8 +139,8 @@ export default function ProjectsPage() {
               variant={selectedCategory === "Oncology" ? "default" : "outline"}
               className={
                 selectedCategory === "Oncology"
-                  ? "bg-cyan-600 text-white cursor-pointer"
-                  : "border-white/20 text-white/80 hover:border-cyan-400 cursor-pointer"
+                  ? "bg-[#f3ede7] text-[#3d2c1e] cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
               }
               onClick={() => setSelectedCategory("Oncology")}
             >
@@ -156,8 +150,8 @@ export default function ProjectsPage() {
               variant={selectedCategory === "Neuroscience" ? "default" : "outline"}
               className={
                 selectedCategory === "Neuroscience"
-                  ? "bg-purple-600 text-white cursor-pointer"
-                  : "border-white/20 text-white/80 hover:border-purple-400 cursor-pointer"
+                  ? "bg-[#fdf6f1] text-[#3d2c1e] cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
               }
               onClick={() => setSelectedCategory("Neuroscience")}
             >
@@ -167,8 +161,8 @@ export default function ProjectsPage() {
               variant={selectedCategory === "Microbiome" ? "default" : "outline"}
               className={
                 selectedCategory === "Microbiome"
-                  ? "bg-fuchsia-600 text-white cursor-pointer"
-                  : "border-white/20 text-white/80 hover:border-fuchsia-400 cursor-pointer"
+                  ? "bg-[#a68c7c] text-white cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
               }
               onClick={() => setSelectedCategory("Microbiome")}
             >
@@ -180,13 +174,13 @@ export default function ProjectsPage() {
         {/* Projects Grid */}
         <motion.div variants={container} initial="hidden" animate="show" className="grid md:grid-cols-2 gap-6">
           {loading ? (
-            <div className="col-span-2 text-center text-white/70 py-12">Loading projects from IPFS...</div>
+            <div className="col-span-2 text-center text-[#3d2c1e]/70 py-12">Loading projects from IPFS...</div>
           ) : filteredProjects.length === 0 ? (
-            <div className="col-span-2 text-center text-white/70 py-12">No projects found.</div>
+            <div className="col-span-2 text-center text-[#3d2c1e]/70 py-12">No projects found.</div>
           ) : (
             filteredProjects.map((project, idx) => {
               const category = project.category || "Other"
-              const color = "fuchsia"
+              const color = "[#a68c7c]"
               const status = "Active"
               const title = project.title || `Project #${idx+1}`
               const description = project.description || "No description."
@@ -201,10 +195,10 @@ export default function ProjectsPage() {
                 <motion.div key={id} variants={item} whileHover={{ y: -5 }} className="h-full">
                   <Link href={`/projects/${id}`} className="block h-full">
                     <Card
-                      className={`h-full bg-white/5 backdrop-blur-lg border border-white/10 hover:border-${color}-500/50 rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-${color}-500/20`}
+                      className={`h-full bg-[#f3ede7] border border-[#e5ded7] hover:border-[#a68c7c] rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#a68c7c]/20`}
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <Badge className={`bg-${color}-600 text-white px-3 py-1 rounded-full text-xs font-medium`}>
+                        <Badge className="bg-[#a68c7c] text-white px-3 py-1 rounded-full text-xs font-medium">
                           {category}
                         </Badge>
                         <Badge
@@ -218,28 +212,28 @@ export default function ProjectsPage() {
                           {status}
                         </Badge>
                       </div>
-                      <h3 className="text-white text-xl font-bold mb-2">{title}</h3>
-                      <p className="text-white/70 mb-4 line-clamp-2">{description}</p>
+                      <h3 className="text-[#3d2c1e] text-xl font-bold mb-2">{title}</h3>
+                      <p className="text-[#3d2c1e]/70 mb-4 line-clamp-2">{description}</p>
 
                       <div className="flex justify-between items-center mb-4">
-                        <span className={`text-${color}-400 font-mono font-bold`}>{token}</span>
+                        <span className="text-[#a68c7c] font-mono font-bold">{token}</span>
                         <span className="text-green-400 font-bold">{roi}</span>
                       </div>
 
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
-                          <span className="text-white/70">Funding Progress</span>
-                          <span className="text-white">
+                          <span className="text-[#3d2c1e]/70">Funding Progress</span>
+                          <span className="text-[#3d2c1e]">
                             ${raised.toLocaleString()} / ${target.toLocaleString()}
                           </span>
                         </div>
-                        <div className="relative h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="relative h-2 w-full bg-[#e5ded7] rounded-full overflow-hidden">
                           <div
-                            className={`absolute top-0 left-0 h-full bg-gradient-to-r from-${color}-500 to-${color}-400 rounded-full`}
+                            className="absolute top-0 left-0 h-full bg-[#a68c7c] rounded-full"
                             style={{ width: `${(raised / target) * 100}%` }}
                           >
                             <div
-                              className={`absolute top-0 left-0 h-full w-full bg-${color}-400 animate-pulse opacity-60`}
+                              className="absolute top-0 left-0 h-full w-full bg-[#a68c7c] animate-pulse opacity-60"
                             />
                           </div>
                         </div>
@@ -247,17 +241,17 @@ export default function ProjectsPage() {
 
                       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                         <div className="flex items-center space-x-2">
-                          <Users className={`h-4 w-4 text-${color}-400`} />
-                          <span className="text-white/70">{investors} investors</span>
+                          <Users className="h-4 w-4 text-[#a68c7c]" />
+                          <span className="text-[#3d2c1e]/70">{investors} investors</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Clock className={`h-4 w-4 text-${color}-400`} />
-                          <span className="text-white/70">{phase}</span>
+                          <Clock className="h-4 w-4 text-[#a68c7c]" />
+                          <span className="text-[#3d2c1e]/70">{phase}</span>
                         </div>
                       </div>
 
                       <Button
-                        className={`w-full bg-gradient-to-r from-${color}-600 to-${color}-500 hover:from-${color}-500 hover:to-${color}-400 text-white shadow-lg shadow-${color}-700/20 transition-all duration-300`}
+                        className="w-full bg-[#a68c7c] hover:bg-[#8c715c] text-white shadow-lg transition-all duration-300"
                       >
                         View Project
                       </Button>
