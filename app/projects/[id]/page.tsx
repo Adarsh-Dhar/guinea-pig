@@ -191,7 +191,7 @@ export default function ProjectDetailPage() {
       return;
     }
     try {
-      // 1. Send ETH equal to project.project.tokenPrice
+      // 1. Send ETH equal to project.project.tokenPrice * quantity
       if (typeof window !== "undefined" && window.ethereum) {
         await window.ethereum.request({
           method: "eth_sendTransaction",
@@ -199,7 +199,7 @@ export default function ProjectDetailPage() {
             {
               from: userWalletAddress,
               to: recipientAddress,
-              value: parseEther((project.project.tokenPrice || 0).toString()).toString(16), // hex string, 1 tokenPrice ETH
+              value: parseEther(((project.project.tokenPrice || 0) * quantity).toString()).toString(16), // hex string, tokenPrice * quantity ETH
             },
           ],
         });
@@ -208,7 +208,7 @@ export default function ProjectDetailPage() {
         console.error("No Ethereum provider found.");
         return;
       }
-      // 2. Transfer 1 royalty token (RT/IP) using SDK
+      // 2. Transfer quantity royalty tokens (RT/IP) using SDK
       if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
         const royaltyTokenAddress = project.project.royaltyToken.address;
         // Get decimals
@@ -218,18 +218,19 @@ export default function ProjectDetailPage() {
           functionName: "decimals",
         });
         const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
+        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
         const response = await client.ipAccount.transferErc20({
           ipId: project.project.ipId,
           tokens: [{
             address: royaltyTokenAddress,
-            amount: oneToken,
+            amount: totalAmount,
             target: userWalletAddress,
           }],
           txOptions: {
             waitForTransaction: true,
           },
         });
-        console.log(`1 royalty token (IP) transferred. Tx hash: ${response.txHash}`);
+        console.log(`${quantity} royalty token(s) (IP) transferred. Tx hash: ${response.txHash}`);
         if (response.receipt) {
           console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
         }
@@ -698,6 +699,11 @@ export default function ProjectDetailPage() {
                     <span className="text-fuchsia-400 font-mono">-</span>
                   </div>
                   <div className="text-white/70 text-sm">Connect your wallet to invest</div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-white/70 text-sm">
+                    {`You will spend ${(p.tokenPrice ? (Number(p.tokenPrice) * quantity).toFixed(4) : (1 * quantity).toFixed(4))} IP for ${quantity} RT`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <button
