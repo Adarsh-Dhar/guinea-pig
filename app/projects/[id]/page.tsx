@@ -234,6 +234,24 @@ export default function ProjectDetailPage() {
         if (response.receipt) {
           console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
         }
+        // Record the investment in the backend
+        const investmentRes = await fetch("/api/investments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userAddress: userWalletAddress,
+            projectId: project.project.id,
+            amount: (project.project.tokenPrice * quantity).toString(),
+            tokens: quantity.toString(),
+          }),
+        });
+        const investmentData = await investmentRes.json();
+        console.log("Investment DB result:", investmentData);
+        // Refresh project data to update currentFunding (awaited for sync update)
+        const res = await fetch(`/api/experiments/${project.project.id}`);
+        const data = await res.json();
+        setProject(data);
+        setQuantity(1); // Reset quantity after buy
       } else {
         console.error("No ipId or royalty token address found for this project.");
       }

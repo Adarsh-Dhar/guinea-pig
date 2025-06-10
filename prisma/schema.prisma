@@ -28,8 +28,8 @@ model Project {
   category         String
   tokenSymbol      String
   totalSupply      String // Always set to "100" for royalty tokens (max 100 tokens per project)
-  totalFunding     String
-  initialPrice     String
+  totalFunding     Decimal @db.Decimal(18, 4)
+  initialPrice     Decimal @db.Decimal(18, 4)
   licenseType      String
   royaltyRate      String
   nftContract      String
@@ -38,9 +38,9 @@ model Project {
   creatorAddress   String
   ipfsMetadataHash String?
   nftMetadataHash  String?
-  currentFunding   String
+  currentFunding   Decimal @db.Decimal(18, 4)
   status           String
-  tokenPrice       String
+  tokenPrice       Decimal @db.Decimal(18, 4)
   activities       Activity[]
   documents        Document[]
   investors        Investment[]
@@ -88,8 +88,8 @@ model Investment {
   id        String   @id @default(uuid())
   userId    String
   projectId String
-  amount    String
-  tokens    String
+  amount    Decimal @db.Decimal(18, 4)
+  tokens    Decimal @db.Decimal(18, 4)
   createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
