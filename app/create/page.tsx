@@ -214,6 +214,9 @@ export default function CreateProjectPage() {
         if (!dbRes.ok) {
           const err = await dbRes.json()
           setError(`DB Error: ${err.error || "Unknown error"}`)
+        } else {
+          const dbValue = await dbRes.json()
+          console.log("DB value after POST:", dbValue)
         }
       } catch (dbErr: any) {
         setError(`DB Error: ${dbErr?.message || dbErr}`)

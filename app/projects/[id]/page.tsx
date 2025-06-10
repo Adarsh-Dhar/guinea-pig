@@ -82,6 +82,7 @@ export default function ProjectDetailPage() {
         return res.json();
       })
       .then((data) => {
+        console.log(data);
         setProject(data);
         setLoading(false);
       })
@@ -218,7 +219,8 @@ export default function ProjectDetailPage() {
   }
 
   const handleBuy = async () => {
-    const recipientAddress = "0xf76daC24BaEf645ee0b3dfAc1997c6b838eF280D";
+    const recipientAddress = project.project.creatorAddress;
+    console.log("recipientAddress", recipientAddress);
     if (!userWalletAddress) {
       console.log("Please connect your wallet first.");
       return;
