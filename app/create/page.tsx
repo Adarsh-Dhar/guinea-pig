@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import ParticleBackground from "@/components/particle-background"
 import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount } from "wagmi"
 import { client, networkInfo } from "@/lib/config"
@@ -367,23 +366,19 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-purple-950 overflow-hidden">
-      <ParticleBackground />
-
+    <div className="min-h-screen bg-[#fdf6f1] overflow-hidden">
       {/* Navigation */}
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50"
+        className="border-b border-[#e5ded7] bg-[#fdf6f1] sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <ArrowLeft className="h-5 w-5 text-fuchsia-400" />
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-                PUMP.SCIENCE
-              </span>
+              <ArrowLeft className="h-5 w-5 text-[#a68c7c]" />
+              <span className="text-xl font-bold text-[#3d2c1e] font-serif">PUMP.SCIENCE</span>
             </Link>
             <ConnectWalletButton />
           </div>
@@ -397,10 +392,8 @@ export default function CreateProjectPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-            Create Research Project
-          </h1>
-          <p className="text-white/80 text-lg">Register your research as an IP Asset and start fundraising</p>
+          <h1 className="text-4xl font-bold mb-4 text-[#3d2c1e] font-serif">Create Research Project</h1>
+          <p className="text-[#a68c7c] text-lg">Register your research as an IP Asset and start fundraising</p>
         </motion.div>
 
         {!isConnected && (
@@ -410,12 +403,12 @@ export default function CreateProjectPage() {
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             className="mb-8"
           >
-            <Card className="bg-white/5 backdrop-blur-lg border border-fuchsia-500/50 rounded-xl p-6">
+            <Card className="bg-[#f3ede7] border border-[#e5ded7] rounded-xl p-6">
               <div className="flex items-center justify-center space-x-4">
-                <Sparkles className="h-8 w-8 text-fuchsia-400" />
+                <Sparkles className="h-8 w-8 text-[#a68c7c]" />
                 <div>
-                  <h3 className="text-white text-lg font-bold mb-2">Connect Your Wallet</h3>
-                  <p className="text-white/70 mb-4">You need to connect your wallet to create a research project</p>
+                  <h3 className="text-[#3d2c1e] text-lg font-bold mb-2">Connect Your Wallet</h3>
+                  <p className="text-[#a68c7c] mb-4">You need to connect your wallet to create a research project</p>
                   <ConnectWalletButton />
                 </div>
               </div>
@@ -431,36 +424,36 @@ export default function CreateProjectPage() {
           onSubmit={handleSubmit}
         >
           {/* Basic Information */}
-          <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+          <Card className="bg-[#f3ede7] border border-[#e5ded7] rounded-xl">
             <CardHeader>
-              <CardTitle className="text-white">Basic Information</CardTitle>
-              <CardDescription className="text-white/70">
+              <CardTitle className="text-[#3d2c1e]">Basic Information</CardTitle>
+              <CardDescription className="text-[#a68c7c]">
                 Provide the fundamental details about your research project
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-white/80">
+                  <Label htmlFor="title" className="text-[#3d2c1e]">
                     Project Title
                   </Label>
                   <Input
                     id="title"
                     placeholder="e.g., Anti-Aging Compound Research"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-white/80">
+                  <Label htmlFor="category" className="text-[#3d2c1e]">
                     Research Category
                   </Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-fuchsia-500 focus:ring-fuchsia-500/20">
+                    <SelectTrigger className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectContent className="bg-[#fdf6f1] border-[#e5ded7] text-[#3d2c1e]">
                       <SelectItem value="longevity">Longevity</SelectItem>
                       <SelectItem value="oncology">Oncology</SelectItem>
                       <SelectItem value="neuroscience">Neuroscience</SelectItem>
@@ -470,25 +463,25 @@ export default function CreateProjectPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nft-contract" className="text-white/80">
+                  <Label htmlFor="nft-contract" className="text-[#3d2c1e]">
                     NFT Contract Address
                   </Label>
                   <Input
                     id="nft-contract"
                     placeholder="0x..."
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={nftContract}
                     onChange={e => setNftContract(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="token-id" className="text-white/80">
+                  <Label htmlFor="token-id" className="text-[#3d2c1e]">
                     Token ID
                   </Label>
                   <Input
                     id="token-id"
                     placeholder="e.g., 1"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={tokenId}
                     onChange={e => setTokenId(e.target.value)}
                   />
@@ -496,13 +489,13 @@ export default function CreateProjectPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-white/80">
+                <Label htmlFor="description" className="text-[#3d2c1e]">
                   Project Description
                 </Label>
                 <Textarea
                   id="description"
                   placeholder="Describe your research objectives, methodology, and expected outcomes..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/50 min-h-[120px] focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                  className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] min-h-[120px] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                 />
@@ -510,26 +503,26 @@ export default function CreateProjectPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="token-symbol" className="text-white/80">
+                  <Label htmlFor="token-symbol" className="text-[#3d2c1e]">
                     Token Symbol
                   </Label>
                   <Input
                     id="token-symbol"
                     placeholder="e.g., $LONGEVITY"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={tokenSymbol}
                     onChange={e => setTokenSymbol(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total-supply" className="text-white/80">
+                  <Label htmlFor="total-supply" className="text-[#3d2c1e]">
                     Royalty Token Supply
                   </Label>
                   <Input
                     id="total-supply"
                     value={totalSupply}
                     readOnly
-                    className="bg-white/10 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20 cursor-not-allowed"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#a68c7c] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20 cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -537,23 +530,23 @@ export default function CreateProjectPage() {
           </Card>
 
           {/* Funding & Milestones */}
-          <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+          <Card className="bg-[#f3ede7] border border-[#e5ded7] rounded-xl">
             <CardHeader>
-              <CardTitle className="text-white">Funding & Research Milestones</CardTitle>
-              <CardDescription className="text-white/70">
+              <CardTitle className="text-[#3d2c1e]">Funding & Research Milestones</CardTitle>
+              <CardDescription className="text-[#a68c7c]">
                 Define your research phases and funding requirements
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="initial-price" className="text-white/80">
+                  <Label htmlFor="initial-price" className="text-[#3d2c1e]">
                     Royalty Token Price (per token)
                   </Label>
                   <Input
                     id="initial-price"
                     placeholder="e.g., 1000"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={initialPrice}
                     onChange={e => setInitialPrice(e.target.value)}
                     type="number"
@@ -562,33 +555,33 @@ export default function CreateProjectPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total-funding" className="text-white/80">
+                  <Label htmlFor="total-funding" className="text-[#3d2c1e]">
                     Total Funding Target
                   </Label>
                   <Input
                     id="total-funding"
                     placeholder="e.g., 75000"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={totalFunding}
                     onChange={e => setTotalFunding(e.target.value)}
                     type="number"
                     min="0"
                     step="any"
                   />
-                  <div className="text-xs text-white/60 mt-1">
-                    You can raise up to <span className="font-semibold text-fuchsia-400">{initialPrice ? 100 * parseFloat(initialPrice) : '...'}</span> (100 × token price)
+                  <div className="text-xs text-[#a68c7c] mt-1">
+                    You can raise up to <span className="font-semibold text-[#a68c7c]">{initialPrice ? 100 * parseFloat(initialPrice) : '...'}</span> (100 × token price)
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <Label className="text-white/80">Research Milestones</Label>
+                  <Label className="text-[#3d2c1e]">Research Milestones</Label>
                   <Button
                     type="button"
                     onClick={addMilestone}
                     size="sm"
-                    className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white"
+                    className="bg-[#a68c7c] hover:bg-[#8c715c] text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Milestone
@@ -601,17 +594,17 @@ export default function CreateProjectPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="p-4 border border-white/10 bg-white/5 rounded-xl space-y-3"
+                    className="p-4 border border-[#e5ded7] bg-[#fdf6f1] rounded-xl space-y-3"
                   >
                     <div className="flex justify-between items-center">
-                      <h4 className="text-white font-medium">Milestone {index + 1}</h4>
+                      <h4 className="text-[#3d2c1e] font-medium">Milestone {index + 1}</h4>
                       {milestones.length > 1 && (
                         <Button
                           type="button"
                           onClick={() => removeMilestone(index)}
                           size="sm"
                           variant="outline"
-                          className="border-red-400 text-red-400 hover:bg-red-400/10"
+                          className="border-[#e5ded7] text-[#a68c7c] hover:bg-[#e5ded7]"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -620,20 +613,20 @@ export default function CreateProjectPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <Input
                         placeholder="Milestone title"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                        className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                         value={milestone.title}
                         onChange={e => handleMilestoneChange(index, "title", e.target.value)}
                       />
                       <Input
                         placeholder="Funding amount"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                        className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                         value={milestone.funding}
                         onChange={e => handleMilestoneChange(index, "funding", e.target.value)}
                       />
                     </div>
                     <Textarea
                       placeholder="Milestone description and success criteria"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                      className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                       value={milestone.description}
                       onChange={e => handleMilestoneChange(index, "description", e.target.value)}
                     />
@@ -644,24 +637,24 @@ export default function CreateProjectPage() {
           </Card>
 
           {/* IP & Legal */}
-          <Card className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+          <Card className="bg-[#f3ede7] border border-[#e5ded7] rounded-xl">
             <CardHeader>
-              <CardTitle className="text-white">IP Asset Configuration</CardTitle>
-              <CardDescription className="text-white/70">
+              <CardTitle className="text-[#3d2c1e]">IP Asset Configuration</CardTitle>
+              <CardDescription className="text-[#a68c7c]">
                 Configure your intellectual property settings on Story Protocol
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="license-type" className="text-white/80">
+                  <Label htmlFor="license-type" className="text-[#3d2c1e]">
                     License Type
                   </Label>
                   <Select value={licenseType} onValueChange={setLicenseType}>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-fuchsia-500 focus:ring-fuchsia-500/20">
+                    <SelectTrigger className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20">
                       <SelectValue placeholder="Select license" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectContent className="bg-[#fdf6f1] border-[#e5ded7] text-[#3d2c1e]">
                       <SelectItem value="commercial">Commercial Use</SelectItem>
                       <SelectItem value="non-commercial">Non-Commercial</SelectItem>
                       <SelectItem value="open-source">Open Source</SelectItem>
@@ -669,13 +662,13 @@ export default function CreateProjectPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="royalty-rate" className="text-white/80">
+                  <Label htmlFor="royalty-rate" className="text-[#3d2c1e]">
                     Royalty Rate (%)
                   </Label>
                   <Input
                     id="royalty-rate"
                     placeholder="e.g., 15"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-fuchsia-500 focus:ring-fuchsia-500/20"
+                    className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] placeholder-[#a68c7c] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20"
                     value={royaltyRate}
                     onChange={e => setRoyaltyRate(e.target.value)}
                   />
@@ -683,18 +676,18 @@ export default function CreateProjectPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="documents" className="text-white/80">
+                <Label htmlFor="documents" className="text-[#3d2c1e]">
                   Research Documents
                 </Label>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="border-2 border-dashed border-white/20 hover:border-fuchsia-400/50 rounded-xl p-6 text-center transition-all duration-300"
+                  className="border-2 border-dashed border-[#e5ded7] hover:border-[#a68c7c] rounded-xl p-6 text-center transition-all duration-300"
                 >
-                  <Upload className="h-8 w-8 text-fuchsia-400 mx-auto mb-2" />
-                  <p className="text-white/70 mb-2">Upload research papers, protocols, and supporting documents</p>
+                  <Upload className="h-8 w-8 text-[#a68c7c] mx-auto mb-2" />
+                  <p className="text-[#a68c7c] mb-2">Upload research papers, protocols, and supporting documents</p>
                   <Button
                     type="button"
-                    className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white"
+                    className="bg-[#a68c7c] hover:bg-[#8c715c] text-white"
                   >
                     Choose Files
                   </Button>
@@ -713,22 +706,22 @@ export default function CreateProjectPage() {
             <Button
               type="button"
               variant="outline"
-              className="border-white/20 text-white/80 hover:bg-white/5"
+              className="border-[#e5ded7] text-[#3d2c1e] hover:bg-[#e5ded7]"
               disabled={!isConnected}
             >
               Save Draft
             </Button>
             <Button
               type="submit"
-              className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white shadow-lg shadow-fuchsia-700/20"
+              className="bg-[#a68c7c] hover:bg-[#8c715c] text-white shadow-md"
               disabled={!isConnected || loading}
             >
               {loading ? "Creating..." : "Create IP Asset & Launch Project"}
             </Button>
           </motion.div>
           {result && (
-            <div className="mt-8 p-4 border border-green-400/30 bg-green-900/20 rounded-xl text-green-200">
-              <h3 className="font-bold text-green-300 mb-2">Research Project Registered!</h3>
+            <div className="mt-8 p-4 border border-[#e5ded7] bg-[#f3ede7] rounded-xl text-[#3d2c1e]">
+              <h3 className="font-bold text-[#a68c7c] mb-2">Research Project Registered!</h3>
               <div className="text-sm mb-2">
                 <span className="font-medium">IP Asset ID:</span>
                 <span className="ml-2 break-words">{result.ipId}</span>
@@ -737,37 +730,37 @@ export default function CreateProjectPage() {
                 href={result.explorer}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 underline text-xs"
+                className="text-[#a68c7c] underline text-xs"
               >
                 View IP Details on Explorer
               </a>
               {/* License Attachment UI */}
               <div className="mt-6">
-                <div className="mb-2 text-white/80 font-semibold">Attach License Terms</div>
+                <div className="mb-2 text-[#3d2c1e] font-semibold">Attach License Terms</div>
                 <div className="flex flex-col sm:flex-row gap-2 mb-4">
                   {licenseTemplates.map(t => (
                     <button
                       key={t.key}
                       type="button"
-                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-150 focus:outline-none ${selectedLicense === t.key ? 'bg-gradient-to-r from-fuchsia-600 to-cyan-600 text-white border-fuchsia-400' : 'bg-white/10 text-white/70 border-white/20 hover:border-fuchsia-400'}`}
+                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-150 focus:outline-none ${selectedLicense === t.key ? 'bg-[#a68c7c] text-white border-[#a68c7c]' : 'bg-[#f3ede7] text-[#a68c7c] border-[#e5ded7] hover:border-[#a68c7c]'}`}
                       onClick={() => setSelectedLicense(t.key)}
                       disabled={attachLoading}
                     >
                       <div>{t.label}</div>
-                      <div className="text-[10px] text-white/60">{t.desc}</div>
+                      <div className="text-[10px] text-[#a68c7c]">{t.desc}</div>
                     </button>
                   ))}
                 </div>
                 <Button
                   type="button"
-                  className="bg-gradient-to-r from-fuchsia-600 to-cyan-600 hover:from-fuchsia-500 hover:to-cyan-500 text-white"
+                  className="bg-[#a68c7c] hover:bg-[#8c715c] text-white"
                   onClick={handleAttachTerms}
                   disabled={attachLoading}
                 >
                   {attachLoading ? "Attaching..." : "Attach Selected License Terms"}
                 </Button>
                 {attachResult && (
-                  <div className="mt-4 p-3 border border-blue-400/30 bg-blue-900/20 rounded-xl text-blue-200">
+                  <div className="mt-4 p-3 border border-[#e5ded7] bg-[#fdf6f1] rounded-xl text-[#3d2c1e]">
                     <div className="font-semibold mb-1">License Terms Attached</div>
                     <div className="text-xs mb-1">License Terms ID: {attachResult.licenseTermsId}</div>
                     <div className="text-xs mb-1">Tx Hash: {attachResult.txHash}</div>
@@ -775,7 +768,7 @@ export default function CreateProjectPage() {
                     {/* Mint License Token UI */}
                     <Button
                       type="button"
-                      className="mt-3 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white"
+                      className="mt-3 bg-[#a68c7c] hover:bg-[#8c715c] text-white"
                       onClick={handleMintLicenseToken}
                       disabled={mintLoading || !address}
                       variant="outline"
@@ -783,7 +776,7 @@ export default function CreateProjectPage() {
                       {mintLoading ? "Minting License Token..." : "Mint License Token to My Wallet"}
                     </Button>
                     {mintResult && (
-                      <div className="mt-3 p-2 border border-purple-400/30 bg-purple-900/20 rounded text-purple-200">
+                      <div className="mt-3 p-2 border border-[#e5ded7] bg-[#f3ede7] rounded text-[#3d2c1e]">
                         <div className="font-semibold">License Token Minted</div>
                         <div className="text-xs">Tx Hash: {mintResult.txHash}</div>
                         <div className="text-xs">Token IDs: {safeStringify(mintResult.licenseTokenIds)}</div>
@@ -791,30 +784,30 @@ export default function CreateProjectPage() {
                           href={`${networkInfo.blockExplorer}/tx/${mintResult.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-400 underline text-xs mt-1 inline-block"
+                          className="text-[#a68c7c] underline text-xs mt-1 inline-block"
                         >
                           View Transaction on Explorer
                         </a>
                       </div>
                     )}
                     {mintError && (
-                      <div className="mt-2 text-xs text-red-300">{mintError}</div>
+                      <div className="mt-2 text-xs text-[#a68c7c]">{mintError}</div>
                     )}
                   </div>
                 )}
                 {attachError && (
-                  <div className="mt-2 text-xs text-red-300">{attachError}</div>
+                  <div className="mt-2 text-xs text-[#a68c7c]">{attachError}</div>
                 )}
               </div>
             </div>
           )}
           {error && (
-            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+            <div className="mt-8 p-4 border border-[#e5ded7] bg-[#f3ede7] rounded-xl text-[#a68c7c]">
               <span className="font-semibold">Error:</span> {error}
             </div>
           )}
           {formError && (
-            <div className="mt-8 p-4 border border-red-400/30 bg-red-900/20 rounded-xl text-red-200">
+            <div className="mt-8 p-4 border border-[#e5ded7] bg-[#f3ede7] rounded-xl text-[#a68c7c]">
               <span className="font-semibold">Error:</span> {formError}
             </div>
           )}
