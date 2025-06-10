@@ -67,9 +67,16 @@ export default function HomePage() {
         className="w-full bg-[#fdf6f1] border-b border-[#e5ded7] sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-20">
-          <div className="flex items-center space-x-3">
-            <Beaker className="h-8 w-8 text-[#3d2c1e]" />
-            <span className="text-2xl font-bold text-[#3d2c1e] font-serif tracking-tight">PetPals</span>
+          <div className="flex items-center space-x-2">
+            <Image
+              src="/assets/hamster3.png"
+              alt="Guinea Pig Logo"
+              width={32}
+              height={32}
+              className="rounded-full bg-[#e5ded7] p-1 shadow-md"
+              priority
+            />
+            <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea-pig</span>
           </div>
           <div className="hidden md:flex items-center space-x-8 text-[#3d2c1e] font-medium">
             <Link href="#" className="hover:text-[#a68c7c] transition-colors">About</Link>

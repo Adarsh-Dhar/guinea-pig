@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { ArrowLeft, Users, Clock, Search, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -72,8 +73,15 @@ export default function ProjectsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <ArrowLeft className="h-5 w-5 text-[#a68c7c]" />
-              <span className="text-xl font-bold text-[#3d2c1e]">PUMP.SCIENCE</span>
+              <Image
+                src="/assets/hamster3.png"
+                alt="Guinea Pig Logo"
+                width={32}
+                height={32}
+                className="rounded-full bg-[#e5ded7] p-1 shadow-md"
+                priority
+              />
+              <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea-pig</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Link href="/create">

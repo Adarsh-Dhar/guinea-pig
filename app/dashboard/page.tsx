@@ -13,6 +13,7 @@ import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useAccount, useBalance } from "wagmi"
 import axios from "axios"
 import { useEffect, useState } from "react"
+import Image from "next/image"
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -63,9 +64,15 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
               <ArrowLeft className="h-5 w-5 text-fuchsia-400" />
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
-                PUMP.SCIENCE
-              </span>
+              <Image
+                src="/assets/hamster3.png"
+                alt="Guinea Pig Logo"
+                width={32}
+                height={32}
+                className="rounded-full bg-fuchsia-950 p-1 shadow-md"
+                priority
+              />
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400 font-serif">guinea-pig</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Button variant="outline" className="border-white/20 text-white/80 hover:bg-white/5">

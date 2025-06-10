@@ -17,6 +17,7 @@ import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP, getRoyaltyVaultAddress } from "@/lib/story-utils"
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 import { Address } from "viem"
+import Image from "next/image"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -378,7 +379,15 @@ export default function CreateProjectPage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
               <ArrowLeft className="h-5 w-5 text-[#a68c7c]" />
-              <span className="text-xl font-bold text-[#3d2c1e] font-serif">PUMP.SCIENCE</span>
+              <Image
+                src="/assets/hamster3.png"
+                alt="Guinea Pig Logo"
+                width={32}
+                height={32}
+                className="rounded-full bg-[#e5ded7] p-1 shadow-md"
+                priority
+              />
+              <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea-pig</span>
             </Link>
             <ConnectWalletButton />
           </div>
