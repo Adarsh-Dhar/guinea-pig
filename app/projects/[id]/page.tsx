@@ -16,6 +16,8 @@ import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 import { erc20Abi } from "viem"
 import ReviewModal from "@/components/ui/review-modal"
+import Image from "next/image"
+import Confetti from "react-confetti"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -55,6 +57,26 @@ export default function ProjectDetailPage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
+
+  // Add state for hamster image
+  const [hamsterState, setHamsterState] = useState<'default' | 'celebrate'>("default");
+  const hamsterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Add state for confetti
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  // Helper to trigger celebration hamster
+  const triggerHamsterCelebrate = () => {
+    setHamsterState('celebrate');
+    if (hamsterTimeoutRef.current) clearTimeout(hamsterTimeoutRef.current);
+    hamsterTimeoutRef.current = setTimeout(() => setHamsterState('default'), 5000);
+  };
+
+  // Helper to trigger confetti
+  const triggerConfetti = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 4000);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -252,6 +274,8 @@ export default function ProjectDetailPage() {
         const data = await res.json();
         setProject(data);
         setQuantity(1); // Reset quantity after buy
+        triggerConfetti(); // Show confetti
+        triggerHamsterCelebrate(); // Celebrate after buy
       } else {
         console.error("No ipId or royalty token address found for this project.");
       }
@@ -282,6 +306,7 @@ export default function ProjectDetailPage() {
         setShowCreate(false);
         setNewProposal({ title: "", description: "" });
         setRefreshGov(r => r + 1);
+        triggerHamsterCelebrate(); // Celebrate after proposal
       }
     } catch (err) {
       setGovError("Failed to create proposal");
@@ -336,6 +361,7 @@ export default function ProjectDetailPage() {
       } else {
         setShowReviewModal(false);
         fetchReviews();
+        triggerHamsterCelebrate(); // Celebrate after review
       }
     } catch {
       setReviewError("Failed to submit review");
@@ -361,6 +387,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#fdf6f1] overflow-hidden">
+      {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={350} gravity={0.25} />}
       <ParticleBackground />
 
       {/* Navigation */}
@@ -381,7 +408,7 @@ export default function ProjectDetailPage() {
         </div>
       </motion.nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 relative">
         {/* Project Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -404,9 +431,19 @@ export default function ProjectDetailPage() {
               {p.tokenSymbol ? `$${p.tokenSymbol}` : "-"}
             </motion.span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#3d2c1e]">
-            {p.title || "Untitled Project"}
-          </h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#3d2c1e]">
+              {p.title || "Untitled Project"}
+            </h1>
+            <Image
+              src={hamsterState === 'celebrate' ? "/assets/hamster4.png" : "/assets/hamster5.png"}
+              alt="Hamster"
+              width={hamsterState === 'celebrate' ? 180 : 100}
+              height={hamsterState === 'celebrate' ? 300 : 200}
+              className="drop-shadow-xl transition-all duration-500 mb-4"
+              priority
+            />
+          </div>
           <p className="text-[#8c715c] text-lg max-w-3xl">
             {p.description || "No description provided."}
           </p>

@@ -81,7 +81,7 @@ export default function ProjectsPage() {
                 className="rounded-full bg-[#e5ded7] p-1 shadow-md"
                 priority
               />
-              <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea-pig</span>
+              <span className="text-xl font-bold text-[#3d2c1e] font-serif">guinea pig</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Link href="/create">

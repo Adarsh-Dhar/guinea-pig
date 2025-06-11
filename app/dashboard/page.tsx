@@ -72,7 +72,7 @@ export default function DashboardPage() {
                 className="rounded-full bg-fuchsia-950 p-1 shadow-md"
                 priority
               />
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400 font-serif">guinea-pig</span>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400 font-serif">guinea pig</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Button variant="outline" className="border-white/20 text-white/80 hover:bg-white/5">
