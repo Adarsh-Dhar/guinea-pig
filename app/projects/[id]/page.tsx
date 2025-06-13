@@ -13,12 +13,14 @@ import ConnectWalletButton from "@/components/connect-wallet-button"
 import { useParams } from "next/navigation"
 import { client, publicClient } from "@/lib/config"
 import { parseEther } from "viem"
-import { useAccount } from "wagmi"
+import { useAccount, useWalletClient } from "wagmi"
 import { erc20Abi } from "viem"
 import ReviewModal from "@/components/ui/review-modal"
 import Image from "next/image"
 import Confetti from "react-confetti"
 import { getCurrentPrice, getPriceAfterBuy } from "@/lib/dynamicPrice"
+import { escrowAbi } from "@/lib/escrow/abi"
+import { escrowAddress } from "@/lib/escrow/address"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -74,6 +76,8 @@ export default function ProjectDetailPage() {
   // Pricing parameters (could be made project-specific)
   const decayRatePerHour = 0.01; // Price decays by $0.01 per hour of inactivity
   const priceImpactPerToken = 0.02; // Each token bought increases price by $0.02
+
+  const { data: walletClient } = useWalletClient();
 
   // Helper to trigger celebration hamster
   const triggerHamsterCelebrate = () => {
@@ -246,97 +250,75 @@ export default function ProjectDetailPage() {
   }
 
   const handleBuy = async () => {
-    const recipientAddress = project.project.creatorAddress;
-    console.log("recipientAddress", recipientAddress);
     if (!userWalletAddress) {
       console.log("Please connect your wallet first.");
       return;
     }
-    try {
-      // 1. Send ETH equal to project.project.tokenPrice * quantity
-      if (typeof window !== "undefined" && window.ethereum) {
-        // Use dynamic price for ETH value
-        const priceToPay = currentPrice !== null ? currentPrice : (project.project.tokenPrice || 0);
-        await window.ethereum.request({
-          method: "eth_sendTransaction",
-          params: [
-            {
-              from: userWalletAddress,
-              to: recipientAddress,
-              value: parseEther((priceToPay * quantity).toString()).toString(16), // hex string, dynamic price * quantity ETH
-            },
-          ],
-        });
-        console.log(`ETH sent to recipient (IP tx sent via wallet). Check your wallet for the transaction hash.`);
-      } else {
-        console.error("No Ethereum provider found.");
-        return;
-      }
-      // 2. Transfer quantity royalty tokens (RT/IP) using SDK
-      if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
-        const royaltyTokenAddress = project.project.royaltyToken.address;
-        // Get decimals
-        const decimals = await publicClient.readContract({
-          address: royaltyTokenAddress,
-          abi: erc20Abi,
-          functionName: "decimals",
-        });
-        const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
-        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
-        const response = await client.ipAccount.transferErc20({
-          ipId: project.project.ipId,
-          tokens: [{
-            address: royaltyTokenAddress,
-            amount: totalAmount,
-            target: userWalletAddress,
-          }],
-          txOptions: {
-            waitForTransaction: true,
-          },
-        });
-        console.log(`${quantity} royalty token(s) (IP) transferred. Tx hash: ${response.txHash}`);
-        if (response.receipt) {
-          console.log(`Transaction confirmed in block: ${response.receipt.blockNumber}`);
-        }
-        // Record the investment in the backend
-        const investmentRes = await fetch("/api/investments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userAddress: userWalletAddress,
-            projectId: project.project.id,
-            amount: (project.project.tokenPrice * quantity).toString(),
-            tokens: quantity.toString(),
-          }),
-        });
-        const investmentData = await investmentRes.json();
-        console.log("Investment DB result:", investmentData);
-        // Refresh project data to update currentFunding (awaited for sync update)
-        const res = await fetch(`/api/experiments/${project.project.id}`);
-        const data = await res.json();
-        setProject(data);
-        setQuantity(1); // Reset quantity after buy
-        triggerConfetti(); // Show confetti
-        triggerHamsterCelebrate(); // Celebrate after buy
-        // After successful buy, update price and lastBuyTimestamp
-        setCurrentPrice((prev) => {
-          if (prev === null) return null;
-          const newPrice = getPriceAfterBuy({
-            currentPrice: prev,
-            amount: quantity,
-            priceImpactPerToken,
-          });
-          setPriceHistory((hist) => [...hist, { price: newPrice, timestamp: Date.now() }]);
-          return newPrice;
-        });
-        setLastBuyTimestamp(Date.now());
-      } else {
-        console.error("No ipId or royalty token address found for this project.");
-      }
-    } catch (error) {
-      console.error(`Error sending ETH or transferring IP(s):`, error);
+    if (!walletClient) {
+      console.error("Wallet client not available");
+      return;
     }
-  };
+    if (!project?.project?.escrowId) {
+      console.error("No escrowId found for this project.");
+      return;
+    }
+    try {
+      // Use dynamic price for ETH value
+      const priceToPay = currentPrice !== null ? currentPrice : (project.project.tokenPrice || 0);
+      const value = parseEther((priceToPay * quantity).toString());
+      console.log("escrowId", BigInt(project.project.escrowId));
+      // Call addFunds on the escrow contract
+      const txHash = await walletClient.writeContract({
+        address: escrowAddress,
+        abi: escrowAbi,
+        functionName: "addFunds",
+        args: [
+          BigInt("9"), // escrowId
+          [], // No new milestone descriptions
+          []  // No new milestone amounts
+        ],
+        value,
+        account: userWalletAddress,
+      });
+      console.log("addFunds txHash:", txHash);
+      // Wait for receipt
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      console.log("addFunds receipt:", receipt);
+      // Record the investment in the backend
+      const investmentRes = await fetch("/api/investments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userAddress: userWalletAddress,
+          projectId: project.project.id,
+          amount: (project.project.tokenPrice * quantity).toString(),
+          tokens: quantity.toString(),
+        }),
+      });
+      const investmentData = await investmentRes.json();
+      // Refresh project data to update currentFunding
+      const res = await fetch(`/api/experiments/${project.project.id}`);
+      const data = await res.json();
+      setProject(data);
+      setQuantity(1); // Reset quantity after buy
+      triggerConfetti(); // Show confetti
+      triggerHamsterCelebrate(); // Celebrate after buy
+      // After successful buy, update price and lastBuyTimestamp
+      setCurrentPrice((prev) => {
+        if (prev === null) return null;
+        const newPrice = getPriceAfterBuy({
+          currentPrice: prev,
+          amount: quantity,
+          priceImpactPerToken,
+        });
+        setPriceHistory((hist) => [...hist, { price: newPrice, timestamp: Date.now() }]);
+        return newPrice;
+      });
+      setLastBuyTimestamp(Date.now());
+    } catch (error) {
+      console.error(`Error funding escrow:`, error);
+    }
+  }
 
   // Create proposal handler
   const handleCreateProposal = async () => {

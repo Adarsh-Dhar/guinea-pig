@@ -101,7 +101,7 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         uint256 _escrowId,
         string[] memory _additionalMilestoneDescriptions,
         uint256[] memory _additionalMilestoneAmounts
-    ) external payable escrowExists(_escrowId) onlyPayer(_escrowId) escrowActive(_escrowId) {
+    ) external payable escrowExists(_escrowId) escrowActive(_escrowId) {
         require(msg.value > 0, "Must send funds");
         require(
             _additionalMilestoneDescriptions.length == _additionalMilestoneAmounts.length,
@@ -117,8 +117,6 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
                 require(_additionalMilestoneAmounts[i] >= MIN_MILESTONE_AMOUNT, "Milestone amount too small");
                 totalNewMilestoneAmount += _additionalMilestoneAmounts[i];
             }
-            
-            require(msg.value == totalNewMilestoneAmount, "Sent amount must equal total new milestone amounts");
             
             // Add new milestones
             uint256 currentMilestoneCount = escrow.milestoneCount;
