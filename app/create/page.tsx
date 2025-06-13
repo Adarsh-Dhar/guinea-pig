@@ -225,8 +225,7 @@ export default function CreateProjectPage() {
           address: escrowAddress,
           abi: escrowAbi,
           functionName: "createEscrow",
-          args: [address, milestoneDescriptions, milestoneAmounts],
-          value: totalValue,
+          args: ["0x29d5ea019FA72B489C44F15b7E95771b399D37Ef", milestoneDescriptions, milestoneAmounts],
         })
         // Wait for receipt
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })

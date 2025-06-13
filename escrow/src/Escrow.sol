@@ -168,20 +168,18 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         address _recipient,
         string[] memory _milestoneDescriptions,
         uint256[] memory _milestoneAmounts
-    ) external payable returns (uint256) {
+    ) external returns (uint256) {
         require(_recipient != address(0), "Invalid recipient address");
-        require(_recipient != msg.sender, "Payer and recipient cannot be the same");
+        require(_recipient == msg.sender, "Payer and recipient should be same");
         require(_milestoneDescriptions.length > 0, "At least one milestone required");
         require(_milestoneDescriptions.length == _milestoneAmounts.length, "Mismatched arrays");
-        require(msg.value > 0, "Must send funds to escrow");
 
         uint256 totalMilestoneAmount = 0;
         for (uint256 i = 0; i < _milestoneAmounts.length; i++) {
             require(_milestoneAmounts[i] >= MIN_MILESTONE_AMOUNT, "Milestone amount too small");
             totalMilestoneAmount += _milestoneAmounts[i];
         }
-        
-        require(msg.value == totalMilestoneAmount, "Sent amount must equal total milestone amounts");
+        // No payment required at creation, just save the milestones and their target amounts
 
         escrowCounter++;
         uint256 escrowId = escrowCounter;
@@ -189,7 +187,7 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         Escrow storage newEscrow = escrows[escrowId];
         newEscrow.payer = msg.sender;
         newEscrow.recipient = _recipient;
-        newEscrow.totalAmount = msg.value;
+        newEscrow.totalAmount = 0; // No funds at creation
         newEscrow.releasedAmount = 0;
         newEscrow.milestoneCount = _milestoneDescriptions.length;
         newEscrow.completedMilestones = 0;
@@ -206,7 +204,7 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
             });
         }
 
-        emit EscrowCreated(escrowId, msg.sender, _recipient, msg.value, _milestoneDescriptions.length);
+        emit EscrowCreated(escrowId, msg.sender, _recipient, 0, _milestoneDescriptions.length);
         return escrowId;
     }
 
