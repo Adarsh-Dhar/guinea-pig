@@ -21,6 +21,7 @@ import Image from "next/image"
 import { escrowAbi } from "@/lib/escrow/abi"
 import { escrowAddress } from "@/lib/escrow/address"
 import { parseEther } from "viem"
+import { decodeEventLog } from 'viem'
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -48,6 +49,7 @@ export default function CreateProjectPage() {
   const [selectedLicense, setSelectedLicense] = useState<string>("open-academic")
   const [formError, setFormError] = useState<string | null>(null)
   const { data: walletClient } = useWalletClient()
+  const [recipient, setRecipient] = useState("")
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -216,10 +218,6 @@ export default function CreateProjectPage() {
         // Prepare milestone data
         const milestoneDescriptions = milestones.map(m => m.title || "Milestone")
         const milestoneAmounts = milestones.map(m => parseEther(m.funding || "0"))
-        const totalValue = milestoneAmounts.reduce((a, b) => a + b, BigInt(0))
-        // Log chain info
-        const chain = walletClient.chain
-        console.log("Using chain for escrow tx:", chain ? `${chain.name} (id: ${chain.id})` : "Unknown chain", chain)
         // Write contract
         const txHash = await walletClient.writeContract({
           address: escrowAddress,
@@ -229,9 +227,30 @@ export default function CreateProjectPage() {
         })
         // Wait for receipt
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-        // Find escrowId from logs
         console.log("receipt", receipt)
-       
+        // Extract escrowId from logs using viem's decodeEventLog
+        if (receipt.logs && receipt.logs.length > 0) {
+          for (const log of receipt.logs) {
+            try {
+              const decoded = decodeEventLog({
+                abi: escrowAbi,
+                data: log.data,
+                topics: log.topics,
+              })
+              console.log("decoded", decoded)
+              if (decoded.eventName === "EscrowCreated") {
+                escrowId = (decoded.args as any).escrowId.toString()
+                console.log("Escrow ID after tx finished:", escrowId)
+                break
+              }
+            } catch (e) {
+              // Not the right event, skip
+            }
+          }
+        }
+        if (!escrowId) {
+          console.warn("EscrowCreated event not found in logs after tx")
+        }
       }
 
       // 4. Persist to backend DB
