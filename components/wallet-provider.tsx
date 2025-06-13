@@ -12,7 +12,7 @@ interface WalletProviderProps {
 
 const config = createConfig(
   getDefaultConfig({
-    chains: [mainnet, polygon, optimism, arbitrum, base],
+    chains: [mainnet, polygon, optimism, arbitrum, base, storyAeneid],
     transports: {
       [mainnet.id]: http(`https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
       [polygon.id]: http(`https://polygon-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),

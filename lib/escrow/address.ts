@@ -1,0 +1,1 @@
+export const escrowAddress = "0xf2EA054DAcdEeA0eB51D34336f35e95f14918a2E";

@@ -41,6 +41,7 @@ model Project {
   currentFunding   Decimal @db.Decimal(18, 4)
   status           String
   tokenPrice       Decimal @db.Decimal(18, 4)
+  escrowId         String?
   activities       Activity[]
   documents        Document[]
   investors        Investment[]

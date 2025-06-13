@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       licenses = [],
       documents = [],
       ipId,
+      escrowId,
     } = body
     console.log("body", body)
 
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
         ipfsMetadataHash,
         nftMetadataHash,
         ipId,
+        escrowId,
         milestones: {
           create: milestones.map((m: any) => ({
             title: m.title,

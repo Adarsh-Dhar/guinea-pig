@@ -11,13 +11,16 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ConnectWalletButton from "@/components/connect-wallet-button"
-import { useAccount } from "wagmi"
-import { client, networkInfo } from "@/lib/config"
+import { useAccount, useWalletClient } from "wagmi"
+import { client, networkInfo, publicClient } from "@/lib/config"
 import { createHash } from "crypto"
 import { createCommercialRemixTerms, SPGNFTContractAddress, RoyaltyPolicyLAP, getRoyaltyVaultAddress } from "@/lib/story-utils"
 import { uploadJSONToIPFS } from "@/lib/uploadToIpfs"
 import { Address } from "viem"
 import Image from "next/image"
+import { escrowAbi } from "@/lib/escrow/abi"
+import { escrowAddress } from "@/lib/escrow/address"
+import { parseEther } from "viem"
 
 export default function CreateProjectPage() {
   const [milestones, setMilestones] = useState([{ title: "", description: "", funding: "" }])
@@ -44,6 +47,7 @@ export default function CreateProjectPage() {
   const [mintError, setMintError] = useState<string | null>(null)
   const [selectedLicense, setSelectedLicense] = useState<string>("open-academic")
   const [formError, setFormError] = useState<string | null>(null)
+  const { data: walletClient } = useWalletClient()
 
   // License templates (can be expanded)
   const licenseTemplates = [
@@ -206,6 +210,31 @@ export default function CreateProjectPage() {
         explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
       })
 
+      // 3.5. Create Escrow onchain
+      let escrowId = null
+      if (walletClient && address) {
+        // Prepare milestone data
+        const milestoneDescriptions = milestones.map(m => m.title || "Milestone")
+        const milestoneAmounts = milestones.map(m => parseEther(m.funding || "0"))
+        const totalValue = milestoneAmounts.reduce((a, b) => a + b, BigInt(0))
+        // Log chain info
+        const chain = walletClient.chain
+        console.log("Using chain for escrow tx:", chain ? `${chain.name} (id: ${chain.id})` : "Unknown chain", chain)
+        // Write contract
+        const txHash = await walletClient.writeContract({
+          address: escrowAddress,
+          abi: escrowAbi,
+          functionName: "createEscrow",
+          args: [address, milestoneDescriptions, milestoneAmounts],
+          value: totalValue,
+        })
+        // Wait for receipt
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+        // Find escrowId from logs
+        console.log("receipt", receipt)
+       
+      }
+
       // 4. Persist to backend DB
       try {
         const dbRes = await fetch("/api/experiments", {
@@ -228,6 +257,7 @@ export default function CreateProjectPage() {
             nftMetadataHash: `0x${createHash("sha256").update(safeStringify(nftMetadata)).digest("hex")}`,
             milestones,
             ipId: response.ipId,
+            escrowId,
           }),
         })
         console.log("db response", dbRes)
