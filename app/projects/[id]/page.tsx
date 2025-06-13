@@ -18,6 +18,7 @@ import { erc20Abi } from "viem"
 import ReviewModal from "@/components/ui/review-modal"
 import Image from "next/image"
 import Confetti from "react-confetti"
+import { getCurrentPrice, getPriceAfterBuy } from "@/lib/dynamicPrice"
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -64,6 +65,15 @@ export default function ProjectDetailPage() {
 
   // Add state for confetti
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Dynamic pricing state
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [lastBuyTimestamp, setLastBuyTimestamp] = useState<number>(Date.now());
+  const [priceHistory, setPriceHistory] = useState<{ price: number; timestamp: number }[]>([]);
+
+  // Pricing parameters (could be made project-specific)
+  const decayRatePerHour = 0.01; // Price decays by $0.01 per hour of inactivity
+  const priceImpactPerToken = 0.02; // Each token bought increases price by $0.02
 
   // Helper to trigger celebration hamster
   const triggerHamsterCelebrate = () => {
@@ -179,6 +189,36 @@ export default function ProjectDetailPage() {
   };
   useEffect(() => { fetchReviews(); }, [project?.project?.id, refreshGov]);
 
+  // Set initial price from project data
+  useEffect(() => {
+    if (project?.project?.initialPrice) {
+      setCurrentPrice(Number(project.project.initialPrice));
+      setLastBuyTimestamp(Date.now());
+      setPriceHistory([{ price: Number(project.project.initialPrice), timestamp: Date.now() }]);
+    }
+  }, [project?.project?.initialPrice]);
+
+  // Decay price every minute if no buys
+  useEffect(() => {
+    if (currentPrice === null) return;
+    const interval = setInterval(() => {
+      setCurrentPrice((prev) => {
+        if (prev === null) return null;
+        const decayed = getCurrentPrice({
+          currentPrice: prev,
+          lastBuyTimestamp,
+          basePrice: Number(project?.project?.initialPrice) || 1,
+          decayRatePerHour,
+        });
+        if (decayed !== prev) {
+          setPriceHistory((hist) => [...hist, { price: decayed, timestamp: Date.now() }]);
+        }
+        return decayed;
+      });
+    }, 60000); // 1 minute
+    return () => clearInterval(interval);
+  }, [currentPrice, lastBuyTimestamp, project?.project?.initialPrice]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fdf6f1]">
@@ -215,13 +255,15 @@ export default function ProjectDetailPage() {
     try {
       // 1. Send ETH equal to project.project.tokenPrice * quantity
       if (typeof window !== "undefined" && window.ethereum) {
+        // Use dynamic price for ETH value
+        const priceToPay = currentPrice !== null ? currentPrice : (project.project.tokenPrice || 0);
         await window.ethereum.request({
           method: "eth_sendTransaction",
           params: [
             {
               from: userWalletAddress,
               to: recipientAddress,
-              value: parseEther(((project.project.tokenPrice || 0) * quantity).toString()).toString(16), // hex string, tokenPrice * quantity ETH
+              value: parseEther((priceToPay * quantity).toString()).toString(16), // hex string, dynamic price * quantity ETH
             },
           ],
         });
@@ -276,6 +318,18 @@ export default function ProjectDetailPage() {
         setQuantity(1); // Reset quantity after buy
         triggerConfetti(); // Show confetti
         triggerHamsterCelebrate(); // Celebrate after buy
+        // After successful buy, update price and lastBuyTimestamp
+        setCurrentPrice((prev) => {
+          if (prev === null) return null;
+          const newPrice = getPriceAfterBuy({
+            currentPrice: prev,
+            amount: quantity,
+            priceImpactPerToken,
+          });
+          setPriceHistory((hist) => [...hist, { price: newPrice, timestamp: Date.now() }]);
+          return newPrice;
+        });
+        setLastBuyTimestamp(Date.now());
       } else {
         console.error("No ipId or royalty token address found for this project.");
       }
@@ -384,6 +438,10 @@ export default function ProjectDetailPage() {
       if (res.ok) fetchReviews();
     } catch {}
   };
+
+  // Calculate price change (last 24h)
+  const price24hAgo = priceHistory.find(h => h.timestamp <= Date.now() - 24 * 3600 * 1000)?.price || (priceHistory.length > 0 ? priceHistory[0].price : null);
+  const priceChange24h = currentPrice !== null && price24hAgo !== null ? ((currentPrice - price24hAgo) / price24hAgo) * 100 : null;
 
   return (
     <div className="min-h-screen bg-[#fdf6f1] overflow-hidden">
@@ -741,11 +799,13 @@ export default function ProjectDetailPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
                     <div className="text-[#8c715c] mb-1">Token Price</div>
-                    <div className="text-[#a68c7c] font-bold">{p.tokenPrice || 1}</div>
+                    <div className="text-[#a68c7c] font-bold">{currentPrice !== null ? currentPrice.toFixed(4) : (p.tokenPrice || 1)}</div>
                   </motion.div>
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
                     <div className="text-[#8c715c] mb-1">24h Change</div>
-                    <div className="text-green-400 text-lg font-bold">-</div>
+                    <div className={priceChange24h !== null && priceChange24h >= 0 ? "text-green-400 text-lg font-bold" : "text-red-400 text-lg font-bold"}>
+                      {priceChange24h !== null ? `${priceChange24h >= 0 ? "+" : ""}${priceChange24h.toFixed(2)}%` : "-"}
+                    </div>
                   </motion.div>
                 </div>
                 <div className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl">
@@ -757,7 +817,7 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[#8c715c] text-sm">
-                    {`You will spend ${(p.tokenPrice ? (Number(p.tokenPrice) * quantity).toFixed(4) : (1 * quantity).toFixed(4))} IP for ${quantity} RT`}
+                    {`You will spend ${currentPrice !== null ? (currentPrice * quantity).toFixed(4) : (p.tokenPrice ? (Number(p.tokenPrice) * quantity).toFixed(4) : (1 * quantity).toFixed(4))} IP for ${quantity} RT`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
