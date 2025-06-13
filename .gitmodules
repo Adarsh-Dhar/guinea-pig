@@ -10,3 +10,6 @@
 [submodule "contract/lib/contracts"]
 	path = contract/lib/contracts
 	url = https://github.com/tokenbound/contracts
+[submodule "escrow/lib/forge-std"]
+	path = escrow/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
