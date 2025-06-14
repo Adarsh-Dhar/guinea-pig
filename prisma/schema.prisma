@@ -60,6 +60,7 @@ model Milestone {
   description String
   funding     String
   project     Project @relation(fields: [projectId], references: [id])
+  claimed     Boolean  @default(false)
 }
 
 model License {

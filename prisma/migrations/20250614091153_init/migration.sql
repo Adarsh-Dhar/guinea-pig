@@ -10,13 +10,14 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Project" (
     "id" TEXT NOT NULL,
+    "ipId" TEXT,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "category" TEXT NOT NULL,
     "tokenSymbol" TEXT NOT NULL,
     "totalSupply" TEXT NOT NULL,
-    "totalFunding" TEXT NOT NULL,
-    "initialPrice" TEXT NOT NULL,
+    "totalFunding" DECIMAL(18,4) NOT NULL,
+    "initialPrice" DECIMAL(18,4) NOT NULL,
     "licenseType" TEXT NOT NULL,
     "royaltyRate" TEXT NOT NULL,
     "nftContract" TEXT NOT NULL,
@@ -25,9 +26,10 @@ CREATE TABLE "Project" (
     "creatorAddress" TEXT NOT NULL,
     "ipfsMetadataHash" TEXT,
     "nftMetadataHash" TEXT,
-    "currentFunding" TEXT NOT NULL,
+    "currentFunding" DECIMAL(18,4) NOT NULL,
     "status" TEXT NOT NULL,
-    "tokenPrice" TEXT NOT NULL,
+    "tokenPrice" DECIMAL(18,4) NOT NULL,
+    "escrowId" TEXT,
 
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
@@ -39,6 +41,7 @@ CREATE TABLE "Milestone" (
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "funding" TEXT NOT NULL,
+    "claimed" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Milestone_pkey" PRIMARY KEY ("id")
 );
@@ -75,8 +78,8 @@ CREATE TABLE "Investment" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
-    "amount" TEXT NOT NULL,
-    "tokens" TEXT NOT NULL,
+    "amount" DECIMAL(18,4) NOT NULL,
+    "tokens" DECIMAL(18,4) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Investment_pkey" PRIMARY KEY ("id")
@@ -101,6 +104,7 @@ CREATE TABLE "Vote" (
     "proposalId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "choice" TEXT NOT NULL,
+    "weight" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Vote_pkey" PRIMARY KEY ("id")
@@ -118,8 +122,49 @@ CREATE TABLE "Activity" (
     CONSTRAINT "Activity_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "RoyaltyToken" (
+    "id" TEXT NOT NULL,
+    "ipId" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RoyaltyToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Review" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" TEXT NOT NULL,
+    "rewarded" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReviewVote" (
+    "id" TEXT NOT NULL,
+    "reviewId" TEXT NOT NULL,
+    "voterId" TEXT NOT NULL,
+    "value" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReviewVote_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_address_key" ON "User"("address");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Project_ipId_key" ON "Project"("ipId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RoyaltyToken_ipId_key" ON "RoyaltyToken"("ipId");
 
 -- AddForeignKey
 ALTER TABLE "Project" ADD CONSTRAINT "Project_creatorAddress_fkey" FOREIGN KEY ("creatorAddress") REFERENCES "User"("address") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -153,3 +198,18 @@ ALTER TABLE "Activity" ADD CONSTRAINT "Activity_projectId_fkey" FOREIGN KEY ("pr
 
 -- AddForeignKey
 ALTER TABLE "Activity" ADD CONSTRAINT "Activity_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RoyaltyToken" ADD CONSTRAINT "RoyaltyToken_ipId_fkey" FOREIGN KEY ("ipId") REFERENCES "Project"("ipId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReviewVote" ADD CONSTRAINT "ReviewVote_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "Review"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReviewVote" ADD CONSTRAINT "ReviewVote_voterId_fkey" FOREIGN KEY ("voterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

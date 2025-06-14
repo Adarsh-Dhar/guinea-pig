@@ -21,6 +21,7 @@ import Confetti from "react-confetti"
 import { getCurrentPrice, getPriceAfterBuy } from "@/lib/dynamicPrice"
 import { escrowAbi } from "@/lib/escrow/abi"
 import { escrowAddress } from "@/lib/escrow/address"
+import { useToast } from '@/components/ui/use-toast'
 
 // Helper for BigInt exponentiation (works in all JS targets)
 function bigIntPow(base: bigint, exp: number): bigint {
@@ -79,6 +80,11 @@ export default function ProjectDetailPage() {
 
   const { data: walletClient } = useWalletClient();
 
+  // Add state to track claimed milestones
+  const [claimingMilestoneId, setClaimingMilestoneId] = useState<string | null>(null);
+
+  const { toast } = useToast();
+
   // Helper to trigger celebration hamster
   const triggerHamsterCelebrate = () => {
     setHamsterState('celebrate');
@@ -90,6 +96,33 @@ export default function ProjectDetailPage() {
   const triggerConfetti = () => {
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 4000);
+  };
+
+  // Handler for claiming a milestone (calls backend)
+  const handleClaimMilestone = async (milestoneId: string, name: string) => {
+    setClaimingMilestoneId(milestoneId);
+    try {
+      const res = await fetch('/api/milestones', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestoneId, claimed: true }),
+      });
+      if (!res.ok) throw new Error('Failed to claim milestone');
+      // Refetch project data to update UI
+      if (project?.project?.id) {
+        const refreshed = await fetch(`/api/experiments/${project.project.id}`);
+        const data = await refreshed.json();
+        setProject(data);
+      }
+      toast({
+        title: 'Milestone Claimed',
+        description: `${name} has been successfully claimed!`,
+      });
+      console.log(`Claimed milestone: ${name}`);
+    } catch (err) {
+      console.error(err);
+    }
+    setClaimingMilestoneId(null);
   };
 
   useEffect(() => {
@@ -567,21 +600,35 @@ export default function ProjectDetailPage() {
                   <h3 className="text-[#3d2c1e] text-xl font-bold mb-4">Milestones</h3>
                   <div className="space-y-4">
                     {Array.isArray(p.milestones) && p.milestones.length > 0 ? (
-                      p.milestones.map((m: any, i: number) => (
-                        <motion.div
-                          key={m.id}
-                          whileHover={{ scale: 1.02 }}
-                          className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl flex items-center justify-between"
-                        >
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-green-400/20 flex items-center justify-center mr-3">
-                              <Sparkles className="h-5 w-5 text-green-400" />
+                      p.milestones.map((m: any, i: number) => {
+                        const isClaimed = m.claimed;
+                        const canClaim = i === 0 || p.milestones[i - 1]?.claimed;
+                        return (
+                          <motion.div
+                            key={m.id}
+                            whileHover={{ scale: 1.02 }}
+                            className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl flex items-center justify-between"
+                          >
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 rounded-full bg-green-400/20 flex items-center justify-center mr-3">
+                                <Sparkles className="h-5 w-5 text-green-400" />
+                              </div>
+                              <span className="text-green-400 font-medium">{m.title}</span>
                             </div>
-                            <span className="text-green-400 font-medium">{m.title}</span>
-                          </div>
-                          <Badge className="bg-green-500 text-[#3d2c1e]">{m.funding}</Badge>
-                        </motion.div>
-                      ))
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-green-500 text-[#3d2c1e]">{m.funding}</Badge>
+                              <Button
+                                className={`ml-2 bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1] ${isClaimed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={!canClaim || isClaimed || claimingMilestoneId === m.id}
+                                onClick={() => handleClaimMilestone(m.id, m.title)}
+                                size="sm"
+                              >
+                                {claimingMilestoneId === m.id ? 'Claiming...' : isClaimed ? 'Claimed' : 'Claim Milestone'}
+                              </Button>
+                            </div>
+                          </motion.div>
+                        );
+                      })
                     ) : (
                       <div className="text-[#8c715c]">No milestones available.</div>
                     )}
