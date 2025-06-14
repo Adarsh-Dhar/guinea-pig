@@ -348,6 +348,22 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         return address(this).balance;
     }
 
+    /**
+     * @dev Owner can withdraw a specified amount from a given escrow
+     * @param _escrowId ID of the escrow to withdraw from
+     * @param _amount Amount to withdraw
+     */
+    function ownerWithdrawFromEscrow(uint256 _escrowId, uint256 _amount) external onlyOwner {
+        Escrow storage escrow = escrows[_escrowId];
+        require(escrow.isActive, "Escrow is not active");
+        require(_amount > 0, "Amount must be greater than zero");
+        require(_amount <= (escrow.totalAmount - escrow.releasedAmount), "Insufficient escrow balance");
+
+        escrow.releasedAmount += _amount;
+        (bool success, ) = owner().call{value: _amount}("");
+        require(success, "Owner withdrawal failed");
+    }
+
     // Fallback functions
     receive() external payable {
         revert("Direct payments not allowed");

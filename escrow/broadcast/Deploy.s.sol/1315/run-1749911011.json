@@ -1,7 +1,7 @@
 {
   "transactions": [
     {
-      "hash": "0x317d514112b2450ae3128bc0363c38bbf158c9fd9ddd493e9e33bec612604a2d",
+      "hash": null,
       "transactionType": "CREATE",
       "contractName": "MilestoneEscrow",
       "contractAddress": "0x74f192bf567c302713ee54b0ab1ddd529eb5c1f9",
@@ -19,44 +19,11 @@
       "isFixedGasLimit": false
     }
   ],
-  "receipts": [
-    {
-      "status": "0x1",
-      "cumulativeGasUsed": "0x195be4",
-      "logs": [
-        {
-          "address": "0x74f192bf567c302713ee54b0ab1ddd529eb5c1f9",
-          "topics": [
-            "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
-            "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "0x000000000000000000000000f76dac24baef645ee0b3dfac1997c6b838ef280d"
-          ],
-          "data": "0x",
-          "blockHash": "0x3832f888590a11b48b5787dd648e55f249da8b38c4867de9b52c674ccc9d36cf",
-          "blockNumber": "0x54b741",
-          "transactionHash": "0x317d514112b2450ae3128bc0363c38bbf158c9fd9ddd493e9e33bec612604a2d",
-          "transactionIndex": "0x0",
-          "logIndex": "0x0",
-          "removed": false
-        }
-      ],
-      "logsBloom": "0x00000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000001000000000000000000000000002000000000020000004000000000000800000000000000020000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400010000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000",
-      "type": "0x2",
-      "transactionHash": "0x317d514112b2450ae3128bc0363c38bbf158c9fd9ddd493e9e33bec612604a2d",
-      "transactionIndex": "0x0",
-      "blockHash": "0x3832f888590a11b48b5787dd648e55f249da8b38c4867de9b52c674ccc9d36cf",
-      "blockNumber": "0x54b741",
-      "gasUsed": "0x195be4",
-      "effectiveGasPrice": "0x59682f07",
-      "from": "0xf76dac24baef645ee0b3dfac1997c6b838ef280d",
-      "to": null,
-      "contractAddress": "0x74f192bf567c302713ee54b0ab1ddd529eb5c1f9"
-    }
-  ],
+  "receipts": [],
   "libraries": [],
   "pending": [],
   "returns": {},
-  "timestamp": 1749911260,
+  "timestamp": 1749911011,
   "chain": 1315,
   "commit": "feec7d2"
 }

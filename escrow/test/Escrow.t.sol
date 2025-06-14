@@ -71,10 +71,17 @@ contract MilestoneEscrowTest is Test {
         vm.expectEmit(true, true, true, true);
         emit EscrowCreated(1, payer, recipient, totalAmount, 3);
         
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
+        );
+        
+        // Add funds after creation
+        escrow.addFunds{value: totalAmount}(
+            escrowId,
+            new string[](0),
+            new uint256[](0)
         );
         
         assertEq(escrowId, 1);
@@ -112,7 +119,7 @@ contract MilestoneEscrowTest is Test {
         
         // Test: Zero recipient address
         vm.expectRevert("Invalid recipient address");
-        escrow.createEscrow{value: totalAmount}(
+        escrow.createEscrow(
             address(0),
             milestoneDescriptions,
             milestoneAmounts
@@ -120,7 +127,7 @@ contract MilestoneEscrowTest is Test {
         
         // Test: Same payer and recipient
         vm.expectRevert("Payer and recipient cannot be the same");
-        escrow.createEscrow{value: totalAmount}(
+        escrow.createEscrow(
             payer,
             milestoneDescriptions,
             milestoneAmounts
@@ -130,7 +137,7 @@ contract MilestoneEscrowTest is Test {
         string[] memory emptyDescriptions;
         uint256[] memory emptyAmounts;
         vm.expectRevert("At least one milestone required");
-        escrow.createEscrow{value: totalAmount}(
+        escrow.createEscrow(
             recipient,
             emptyDescriptions,
             emptyAmounts
@@ -142,26 +149,40 @@ contract MilestoneEscrowTest is Test {
         shortDescriptions[1] = "Milestone 2";
         
         vm.expectRevert("Mismatched arrays");
-        escrow.createEscrow{value: totalAmount}(
+        escrow.createEscrow(
             recipient,
             shortDescriptions,
             milestoneAmounts
         );
         
         // Test: No funds sent
-        vm.expectRevert("Must send funds to escrow");
-        escrow.createEscrow{value: 0}(
+        vm.expectRevert("Must send funds");
+        uint256 escrowIdNoFunds = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
         );
+        // Try to add funds with zero value
+        vm.expectRevert("Must send funds");
+        escrow.addFunds{value: 0}(
+            escrowIdNoFunds,
+            new string[](0),
+            new uint256[](0)
+        );
         
         // Test: Incorrect amount
         vm.expectRevert("Sent amount must equal total milestone amounts");
-        escrow.createEscrow{value: 1 ether}(
+        uint256 escrowIdWrongAmount = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
+        );
+        // Try to add funds with wrong value
+        vm.expectRevert("Sent amount must equal total milestone amounts");
+        escrow.addFunds{value: 1 ether}(
+            escrowIdWrongAmount,
+            new string[](0),
+            new uint256[](0)
         );
         
         vm.stopPrank();
@@ -171,7 +192,7 @@ contract MilestoneEscrowTest is Test {
         // Create escrow first
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
@@ -220,7 +241,7 @@ contract MilestoneEscrowTest is Test {
         // Create escrow
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
@@ -251,7 +272,7 @@ contract MilestoneEscrowTest is Test {
         // Create escrow
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
@@ -283,7 +304,7 @@ contract MilestoneEscrowTest is Test {
         // Create escrow
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
@@ -314,7 +335,7 @@ contract MilestoneEscrowTest is Test {
         // Create escrow
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
@@ -342,10 +363,15 @@ contract MilestoneEscrowTest is Test {
         // Create escrow to have funds in contract
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        escrow.createEscrow{value: totalAmount}(
+        escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
+        );
+        escrow.addFunds{value: totalAmount}(
+            1,
+            new string[](0),
+            new uint256[](0)
         );
         vm.stopPrank();
         
@@ -375,10 +401,15 @@ contract MilestoneEscrowTest is Test {
         // Create escrow
         vm.startPrank(payer);
         uint256 totalAmount = MILESTONE_AMOUNT_1 + MILESTONE_AMOUNT_2 + MILESTONE_AMOUNT_3;
-        uint256 escrowId = escrow.createEscrow{value: totalAmount}(
+        uint256 escrowId = escrow.createEscrow(
             recipient,
             milestoneDescriptions,
             milestoneAmounts
+        );
+        escrow.addFunds{value: totalAmount}(
+            escrowId,
+            new string[](0),
+            new uint256[](0)
         );
         vm.stopPrank();
         
