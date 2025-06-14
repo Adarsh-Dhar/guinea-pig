@@ -263,7 +263,7 @@ export default function ProjectDetailPage() {
       return;
     }
     try {
-      // Use dynamic price for ETH value
+      // 1. Send ETH to escrow contract
       const priceToPay = currentPrice !== null ? currentPrice : (project.project.tokenPrice || 0);
       const value = parseEther((priceToPay * quantity).toString());
       console.log("escrowId", BigInt(project.project.escrowId));
@@ -273,7 +273,7 @@ export default function ProjectDetailPage() {
         abi: escrowAbi,
         functionName: "addFunds",
         args: [
-          BigInt("9"), // escrowId
+          BigInt(project.project.escrowId), // escrowId
           [], // No new milestone descriptions
           []  // No new milestone amounts
         ],
@@ -284,6 +284,37 @@ export default function ProjectDetailPage() {
       // Wait for receipt
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
       console.log("addFunds receipt:", receipt);
+
+      // 2. Mint royalty tokens to user using client.ipAccount.transferErc20 (copied code style)
+      if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
+        const royaltyTokenAddress = project.project.royaltyToken.address;
+        // Get decimals
+        const decimals = await publicClient.readContract({
+          address: royaltyTokenAddress,
+          abi: erc20Abi,
+          functionName: "decimals",
+        });
+        const oneToken = bigIntPow(BigInt(10), Number(decimals)); // 1 token
+        const totalAmount = oneToken * BigInt(quantity); // Multiply by quantity
+        const response = await client.ipAccount.transferErc20({
+          ipId: project.project.ipId,
+          tokens: [{
+            address: royaltyTokenAddress,
+            amount: totalAmount,
+            target: userWalletAddress,
+          }],
+          txOptions: {
+            waitForTransaction: true,
+          },
+        });
+        console.log(`${quantity} royalty token(s) (IP) minted to user. Tx hash: ${response.txHash}`);
+        if (response.receipt) {
+          console.log(`Mint transaction confirmed in block: ${response.receipt.blockNumber}`);
+        }
+      } else {
+        console.error("No ipId or royalty token address found for this project.");
+      }
+
       // Record the investment in the backend
       const investmentRes = await fetch("/api/investments", {
         method: "POST",
@@ -316,7 +347,7 @@ export default function ProjectDetailPage() {
       });
       setLastBuyTimestamp(Date.now());
     } catch (error) {
-      console.error(`Error funding escrow:`, error);
+      console.error(`Error funding escrow or minting tokens:`, error);
     }
   }
 
