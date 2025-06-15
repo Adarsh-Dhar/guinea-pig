@@ -81,7 +81,6 @@ export default function HomePage() {
           <div className="hidden md:flex items-center space-x-8 text-[#3d2c1e] font-medium">
             <Link href="/projects" className="hover:text-[#a68c7c] transition-colors">Projects</Link>
             <Link href="/create" className="hover:text-[#a68c7c] transition-colors">Create</Link>
-            <Link href="/dashboard" className="hover:text-[#a68c7c] transition-colors">Dashboard</Link>
           </div>
           <div className="flex items-center space-x-2">
             <ConnectWalletButton />

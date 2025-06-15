@@ -118,6 +118,20 @@ export async function POST(req: NextRequest) {
         documents: true,
       },
     })
+    // --- ADD: Create RoyaltyToken if ipId and royaltyVaultAddress are present ---
+    if (ipId && body.royaltyVaultAddress) {
+      // Only create if not already exists
+      const existing = await prisma.royaltyToken.findUnique({ where: { ipId } })
+      if (!existing) {
+        await prisma.royaltyToken.create({
+          data: {
+            ipId,
+            address: body.royaltyVaultAddress,
+          },
+        })
+      }
+    }
+    // --- END ADD ---
     console.log("project", project)
     return NextResponse.json({ project }, { status: 201 })
   } catch (error) {

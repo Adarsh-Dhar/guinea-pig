@@ -32,7 +32,6 @@ export default function CreateProjectPage() {
   const [totalSupply] = useState("100")
   const [totalFunding, setTotalFunding] = useState("")
   const [initialPrice, setInitialPrice] = useState("")
-  const [licenseType, setLicenseType] = useState("")
   const [royaltyRate, setRoyaltyRate] = useState("")
   const [nftContract, setNftContract] = useState("")
   const [tokenId, setTokenId] = useState("")
@@ -51,7 +50,7 @@ export default function CreateProjectPage() {
   const { data: walletClient } = useWalletClient()
   const [recipient, setRecipient] = useState("")
 
-  // License templates (can be expanded)
+  // License templates (expanded to include hardcoded types)
   const licenseTemplates = [
     {
       key: "open-academic",
@@ -98,6 +97,55 @@ export default function CreateProjectPage() {
           researchUseAllowed: true,
           dataSharingRequirement: "DAO decides",
           derivativeRoyaltyShare: 7,
+        },
+      },
+    },
+    // --- Added below: migrated from hardcoded select ---
+    {
+      key: "commercial",
+      label: "Commercial Use",
+      desc: "Allows commercial use, customizable royalty rate",
+      terms: {
+        commercialUse: true,
+        commercialRevShare: Number(royaltyRate) || 15,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: true,
+          dataSharingRequirement: "None",
+          derivativeRoyaltyShare: 0,
+        },
+      },
+    },
+    {
+      key: "non-commercial",
+      label: "Non-Commercial",
+      desc: "No commercial use allowed, open for research",
+      terms: {
+        commercialUse: false,
+        commercialRevShare: 0,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: true,
+          dataSharingRequirement: "Open access",
+          derivativeRoyaltyShare: 0,
+        },
+      },
+    },
+    {
+      key: "open-source",
+      label: "Open Source",
+      desc: "Open source, no royalties, free use",
+      terms: {
+        commercialUse: true,
+        commercialRevShare: 0,
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        additionalParams: {
+          researchUseAllowed: true,
+          dataSharingRequirement: "Open access",
+          derivativeRoyaltyShare: 0,
         },
       },
     },
@@ -149,6 +197,7 @@ export default function CreateProjectPage() {
     try {
       // 1. Compose metadata
       const projectName = title
+      const selectedTemplate = licenseTemplates.find(t => t.key === selectedLicense)
       const ipMetadata = client.ipAsset.generateIpMetadata({
         title: projectName,
         description: description + "\n\n---\nMilestones:\n" + milestones.map((m, i) => `Milestone ${i+1}: ${m.title}\nFunding: ${m.funding}\n${m.description}`).join("\n\n"),
@@ -171,8 +220,8 @@ export default function CreateProjectPage() {
           { key: "Total Supply", value: totalSupply },
           { key: "Total Funding", value: totalFunding },
           { key: "Initial Price", value: initialPrice },
-          { key: "License Type", value: licenseType },
           { key: "Royalty Rate", value: royaltyRate },
+          { key: "License Template", value: selectedTemplate?.label || "" },
         ],
       })
       const nftMetadata = {
@@ -212,32 +261,18 @@ export default function CreateProjectPage() {
         },
         txOptions: { waitForTransaction: true },
       })
-      setResult({
-        txHash: response.txHash,
-        ipId: response.ipId,
-        licenseTermsIds: response.licenseTermsIds,
-        explorer: `${networkInfo.protocolExplorer}/ipa/${response.ipId}`,
-      })
-
-      // 3.5. Create Escrow onchain
+      // 4. Create Escrow onchain
       let escrowId = null
       if (walletClient && address) {
-        // Prepare milestone data
         const milestoneDescriptions = milestones.map(m => m.title || "Milestone")
         const milestoneAmounts = milestones.map(m => parseEther(m.funding || "0"))
-
-        console.log("current address", address)
-        // Write contract
         const txHash = await walletClient.writeContract({
           address: escrowAddress,
           abi: escrowAbi,
           functionName: "createEscrow",
           args: [address, milestoneDescriptions, milestoneAmounts],
         })
-        // Wait for receipt
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-        console.log("receipt", receipt)
-        // Extract escrowId from logs using viem's decodeEventLog
         if (receipt.logs && receipt.logs.length > 0) {
           for (const log of receipt.logs) {
             try {
@@ -246,28 +281,92 @@ export default function CreateProjectPage() {
                 data: log.data,
                 topics: log.topics,
               })
-              console.log("decoded", decoded)
               if (decoded.eventName === "EscrowCreated") {
                 escrowId = (decoded.args as any).escrowId.toString()
-                console.log("Escrow ID after tx finished:", escrowId)
                 break
               }
-            } catch (e) {
-              // Not the right event, skip
-            }
+            } catch (e) {}
           }
         }
-        if (!escrowId) {
-          console.warn("EscrowCreated event not found in logs after tx")
+      }
+      // 5. Attach License Terms
+      let licenseTermsId = null
+      let attachTxHash = null
+      let licenseTokenIds = null
+      let mintTxHash = null
+      let royaltyVaultAddress = null
+      if (selectedTemplate) {
+        // Compose license terms from template
+        const licenseTerms = {
+          defaultMintingFee: BigInt(0),
+          currency: "0x1514000000000000000000000000000000000000" as Address, // $WIP
+          royaltyPolicy: selectedTemplate.terms.commercialUse
+            ? RoyaltyPolicyLAP
+            : "0x0000000000000000000000000000000000000000" as `0x${string}`,
+          transferable: true,
+          expiration: BigInt(0),
+          commercialUse: selectedTemplate.terms.commercialUse,
+          commercialAttribution: true,
+          commercializerChecker: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+          commercializerCheckerData: "0x00" as `0x${string}`,
+          commercialRevShare: selectedTemplate.terms.commercialRevShare,
+          commercialRevCeiling: BigInt(0),
+          derivativesAllowed: selectedTemplate.terms.derivativesAllowed,
+          derivativesAttribution: selectedTemplate.terms.derivativesAttribution,
+          derivativesApproval: false,
+          derivativesReciprocal: true,
+          derivativeRevCeiling: BigInt(0),
+          uri: "",
+        }
+        // Register license terms
+        const regRes = await client.license.registerPILTerms({
+          ...licenseTerms,
+          txOptions: { waitForTransaction: true },
+        })
+        licenseTermsId = regRes.licenseTermsId
+        // Attach license terms to IP
+        const attachRes = await client.license.attachLicenseTerms({
+          licenseTermsId: String(licenseTermsId),
+          ipId: response.ipId as `0x${string}`,
+          txOptions: { waitForTransaction: true },
+        })
+        attachTxHash = attachRes.txHash
+        // Mint license token to creator
+        const mintRes = await client.license.mintLicenseTokens({
+          licenseTermsId: String(licenseTermsId),
+          licensorIpId: response.ipId as `0x${string}`,
+          receiver: address,
+          amount: 1,
+          maxMintingFee: BigInt(0),
+          maxRevenueShare: 100,
+          txOptions: { waitForTransaction: true },
+        })
+        licenseTokenIds = mintRes.licenseTokenIds
+        mintTxHash = mintRes.txHash
+        // Fetch royalty vault address
+        try {
+          royaltyVaultAddress = await getRoyaltyVaultAddress((response.ipId ?? "0x") as Address)
+        } catch (vaultErr) {
+          // ignore
         }
       }
-
-      // 4. Persist to backend DB
+      // 6. Persist to backend DB (only after all above succeed)
       try {
+        // Construct licenses array for backend
+        const licenses = selectedTemplate ? [{
+          type: selectedTemplate.label,
+          commercialUse: selectedTemplate.terms.commercialUse,
+          commercialRevShare: selectedTemplate.terms.commercialRevShare,
+          derivativesAllowed: selectedTemplate.terms.derivativesAllowed,
+          derivativesAttribution: selectedTemplate.terms.derivativesAttribution,
+          researchUseAllowed: selectedTemplate.terms.additionalParams.researchUseAllowed,
+          dataSharingRequirement: selectedTemplate.terms.additionalParams.dataSharingRequirement,
+          derivativeRoyaltyShare: selectedTemplate.terms.additionalParams.derivativeRoyaltyShare,
+        }] : [];
         const dbRes = await fetch("/api/experiments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: safeStringify({
             title,
             description,
             category,
@@ -275,7 +374,6 @@ export default function CreateProjectPage() {
             totalSupply,
             totalFunding,
             initialPrice,
-            licenseType,
             royaltyRate,
             nftContract,
             tokenId,
@@ -285,135 +383,50 @@ export default function CreateProjectPage() {
             milestones,
             ipId: response.ipId,
             escrowId,
+            licenseType: selectedTemplate?.label || "",
+            licenses,
+            licenseTermsId,
+            attachTxHash,
+            licenseTokenIds,
+            mintTxHash,
+            royaltyVaultAddress,
+            explorer: `${networkInfo.protocolExplorer}/ipa/${safe0x(`${response.ipId ?? ''}`)}`,
           }),
         })
-        console.log("db response", dbRes)
         if (!dbRes.ok) {
           const err = await dbRes.json()
           setError(`DB Error: ${err.error || "Unknown error"}`)
-        } else {
-          const dbValue = await dbRes.json()
-          console.log("DB value after POST:", dbValue)
+          setLoading(false)
+          return
         }
       } catch (dbErr: any) {
         setError(`DB Error: ${dbErr?.message || dbErr}`)
+        setLoading(false)
+        return
       }
-
-      // Fetch and log the updated project from the backend
-      const projectRes = await fetch(`/api/experiments/${response.ipId}`)
-      const projectData = await projectRes.json()
-      console.log("Updated project from DB:", projectData)
+      setResult({
+        txHash: response.txHash,
+        ipId: safe0x(`${response.ipId ?? ''}`) as `0x${string}`,
+        licenseTermsId: safe0x(`${licenseTermsId ?? ''}`) as `0x${string}`,
+        licenseTokenIds,
+        mintTxHash: safe0x(`${mintTxHash ?? ''}`) as `0x${string}`,
+        attachTxHash: safe0x(`${attachTxHash ?? ''}`) as `0x${string}`,
+        royaltyVaultAddress: safe0x(`${royaltyVaultAddress ?? ''}`) as `0x${string}`,
+        explorer: `${networkInfo.protocolExplorer}/ipa/${safe0x(`${response.ipId ?? ''}`) as `0x${string}`}`,
+      } as {
+        txHash: string;
+        ipId: `0x${string}`;
+        licenseTermsId: `0x${string}`;
+        licenseTokenIds: any;
+        mintTxHash: `0x${string}`;
+        attachTxHash: `0x${string}`;
+        royaltyVaultAddress: `0x${string}`;
+        explorer: string;
+      })
     } catch (err: any) {
-      setError(err?.message || "Unknown error during IP registration")
+      setError(err?.message || "Unknown error during project creation")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleAttachTerms = async () => {
-    if (!result?.ipId) return
-    setAttachLoading(true)
-    setAttachResult(null)
-    setAttachError(null)
-    try {
-      // Find selected license template
-      const template = licenseTemplates.find(t => t.key === selectedLicense)
-      if (!template) throw new Error("License template not found")
-      // Compose license terms (expand as needed for your protocol)
-      const licenseTerms = {
-        defaultMintingFee: BigInt(0),
-        currency: "0x1514000000000000000000000000000000000000" as Address, // $WIP
-        royaltyPolicy: template.terms.commercialUse
-          ? RoyaltyPolicyLAP
-          : "0x0000000000000000000000000000000000000000" as `0x${string}`,
-        transferable: true,
-        expiration: BigInt(0),
-        commercialUse: template.terms.commercialUse,
-        commercialAttribution: true,
-        commercializerChecker: "0x0000000000000000000000000000000000000000" as `0x${string}`,
-        commercializerCheckerData: "0x00" as `0x${string}`,
-        commercialRevShare: template.terms.commercialRevShare,
-        commercialRevCeiling: BigInt(0),
-        derivativesAllowed: template.terms.derivativesAllowed,
-        derivativesAttribution: template.terms.derivativesAttribution,
-        derivativesApproval: false,
-        derivativesReciprocal: true,
-        derivativeRevCeiling: BigInt(0),
-        uri: "",
-        // You can add additionalParams to the uri or a custom field if your backend supports it
-      }
-      // 1. Register the license terms
-      const regRes = await client.license.registerPILTerms({
-        ...licenseTerms,
-        txOptions: { waitForTransaction: true },
-      })
-      // 2. Attach the license terms to the IP
-      const attachRes = await client.license.attachLicenseTerms({
-        licenseTermsId: String(regRes.licenseTermsId),
-        ipId: result.ipId,
-        txOptions: { waitForTransaction: true },
-      })
-      setAttachResult({
-        txHash: attachRes.txHash,
-        licenseTermsId: regRes.licenseTermsId,
-        success: attachRes.success,
-      })
-    } catch (err: any) {
-      setAttachError(err?.message || "Unknown error attaching license terms")
-    } finally {
-      setAttachLoading(false)
-    }
-  }
-
-  const handleMintLicenseToken = async () => {
-    if (!result?.ipId || !attachResult?.licenseTermsId || !address) return
-    setMintLoading(true)
-    setMintResult(null)
-    setMintError(null)
-    try {
-      // Use the connected user's address as the receiver
-      const receiver = address
-      const response = await client.license.mintLicenseTokens({
-        licenseTermsId: String(attachResult.licenseTermsId),
-        licensorIpId: result.ipId,
-        receiver,
-        amount: 1,
-        maxMintingFee: BigInt(0),
-        maxRevenueShare: 100,
-        txOptions: { waitForTransaction: true },
-      })
-      setMintResult({
-        txHash: response.txHash,
-        licenseTokenIds: response.licenseTokenIds,
-      })
-
-      // Fetch and log the royalty vault address after minting
-      try {
-        console.log("result", result)
-        const vaultAddress = await getRoyaltyVaultAddress(result.ipId as Address)
-        console.log("Royalty Vault Address (ERC-20) after mint:", vaultAddress)
-        console.log("result?.ipId", result?.ipId)
-        if (vaultAddress && vaultAddress !== "0x0000000000000000000000000000000000000000" && result?.ipId) {
-          // POST to backend
-          const res = await fetch(`/api/experiments/${result.ipId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ address: vaultAddress }),
-          })
-          const data = await res.json()
-          console.log("Royalty token saved to backend:", data)
-          // Fetch and log the updated project from the backend
-          const projectRes = await fetch(`/api/experiments/${result.ipId}`)
-          const projectData = await projectRes.json()
-          console.log("Updated project from DB:", projectData)
-        }
-      } catch (vaultErr) {
-        console.error("Failed to fetch or save royalty vault address after mint:", vaultErr)
-      }
-    } catch (err: any) {
-      setMintError(err?.message || "Unknown error minting license token")
-    } finally {
-      setMintLoading(false)
     }
   }
 
@@ -421,6 +434,12 @@ export default function CreateProjectPage() {
     return JSON.stringify(obj, (key, value) =>
       typeof value === "bigint" ? value.toString() : value
     )
+  }
+
+  // Add a helper to ensure 0x-prefixed string
+  function safe0x(val: any): `0x${string}` {
+    if (typeof val === 'string' && val.startsWith('0x')) return val as `0x${string}`;
+    return '0x';
   }
 
   return (
@@ -713,17 +732,20 @@ export default function CreateProjectPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="license-type" className="text-[#3d2c1e]">
-                    License Type
+                  <Label htmlFor="license-template" className="text-[#3d2c1e]">
+                    License Template
                   </Label>
-                  <Select value={licenseType} onValueChange={setLicenseType}>
+                  <Select value={selectedLicense} onValueChange={setSelectedLicense}>
                     <SelectTrigger className="bg-[#f3ede7] border-[#e5ded7] text-[#3d2c1e] focus:border-[#a68c7c] focus:ring-[#a68c7c]/20">
-                      <SelectValue placeholder="Select license" />
+                      <SelectValue placeholder="Select license template" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#fdf6f1] border-[#e5ded7] text-[#3d2c1e]">
-                      <SelectItem value="commercial">Commercial Use</SelectItem>
-                      <SelectItem value="non-commercial">Non-Commercial</SelectItem>
-                      <SelectItem value="open-source">Open Source</SelectItem>
+                      {licenseTemplates.map(t => (
+                        <SelectItem key={t.key} value={t.key}>
+                          <div>{t.label}</div>
+                          <div className="text-[10px] text-[#a68c7c]">{t.desc}</div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -800,71 +822,15 @@ export default function CreateProjectPage() {
               >
                 View IP Details on Explorer
               </a>
-              {/* License Attachment UI */}
-              <div className="mt-6">
-                <div className="mb-2 text-[#3d2c1e] font-semibold">Attach License Terms</div>
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  {licenseTemplates.map(t => (
-                    <button
-                      key={t.key}
-                      type="button"
-                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-150 focus:outline-none ${selectedLicense === t.key ? 'bg-[#a68c7c] text-white border-[#a68c7c]' : 'bg-[#f3ede7] text-[#a68c7c] border-[#e5ded7] hover:border-[#a68c7c]'}`}
-                      onClick={() => setSelectedLicense(t.key)}
-                      disabled={attachLoading}
-                    >
-                      <div>{t.label}</div>
-                      <div className="text-[10px] text-[#a68c7c]">{t.desc}</div>
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  className="bg-[#a68c7c] hover:bg-[#8c715c] text-white"
-                  onClick={handleAttachTerms}
-                  disabled={attachLoading}
-                >
-                  {attachLoading ? "Attaching..." : "Attach Selected License Terms"}
-                </Button>
-                {attachResult && (
-                  <div className="mt-4 p-3 border border-[#e5ded7] bg-[#fdf6f1] rounded-xl text-[#3d2c1e]">
-                    <div className="font-semibold mb-1">License Terms Attached</div>
-                    <div className="text-xs mb-1">License Terms ID: {attachResult.licenseTermsId}</div>
-                    <div className="text-xs mb-1">Tx Hash: {attachResult.txHash}</div>
-                    <div className="text-xs mb-1">Status: {attachResult.success ? "Success" : "Already attached"}</div>
-                    {/* Mint License Token UI */}
-                    <Button
-                      type="button"
-                      className="mt-3 bg-[#a68c7c] hover:bg-[#8c715c] text-white"
-                      onClick={handleMintLicenseToken}
-                      disabled={mintLoading || !address}
-                      variant="outline"
-                    >
-                      {mintLoading ? "Minting License Token..." : "Mint License Token to My Wallet"}
-                    </Button>
-                    {mintResult && (
-                      <div className="mt-3 p-2 border border-[#e5ded7] bg-[#f3ede7] rounded text-[#3d2c1e]">
-                        <div className="font-semibold">License Token Minted</div>
-                        <div className="text-xs">Tx Hash: {mintResult.txHash}</div>
-                        <div className="text-xs">Token IDs: {safeStringify(mintResult.licenseTokenIds)}</div>
-                        <a
-                          href={`${networkInfo.blockExplorer}/tx/${mintResult.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#a68c7c] underline text-xs mt-1 inline-block"
-                        >
-                          View Transaction on Explorer
-                        </a>
-                      </div>
-                    )}
-                    {mintError && (
-                      <div className="mt-2 text-xs text-[#a68c7c]">{mintError}</div>
-                    )}
-                  </div>
-                )}
-                {attachError && (
-                  <div className="mt-2 text-xs text-[#a68c7c]">{attachError}</div>
-                )}
-              </div>
+              {result.licenseTermsId && (
+                <div className="mt-2 text-xs text-[#3d2c1e]">License Terms ID: {result.licenseTermsId}</div>
+              )}
+              {result.licenseTokenIds && (
+                <div className="mt-2 text-xs text-[#3d2c1e]">License Token IDs: {safeStringify(result.licenseTokenIds)}</div>
+              )}
+              {result.royaltyVaultAddress && (
+                <div className="mt-2 text-xs text-[#3d2c1e]">Royalty Vault Address: {result.royaltyVaultAddress}</div>
+              )}
             </div>
           )}
           {error && (

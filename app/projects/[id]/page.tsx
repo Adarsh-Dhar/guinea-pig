@@ -345,11 +345,23 @@ export default function ProjectDetailPage() {
 
   const p = project.project || {};
 
+  // Add fundingComplete variable
+  const fundingComplete = p.currentFunding && p.totalFunding && Number(p.currentFunding) >= Number(p.totalFunding);
+
   const toggleExpand = () => {
     setExpanded(!expanded)
   }
 
   const handleBuy = async () => {
+    // Prevent buy if funding is complete
+    if (fundingComplete) {
+      toast({
+        title: "Funding Complete",
+        description: "The funding goal has already been reached. No further investments allowed.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!userWalletAddress) {
       console.log("Please connect your wallet first.");
       return;
@@ -935,31 +947,38 @@ export default function ProjectDetailPage() {
                     {`You will spend ${currentPrice !== null ? (currentPrice * quantity).toFixed(4) : (p.tokenPrice ? (Number(p.tokenPrice) * quantity).toFixed(4) : (1 * quantity).toFixed(4))} IP for ${quantity} RT`}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    className="px-3 py-1 rounded-l-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition disabled:opacity-50"
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    disabled={quantity === 1}
-                    aria-label="Decrease quantity"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-1 bg-fuchsia-900/30 text-[#3d2c1e] font-mono text-lg border border-fuchsia-700/40">
-                    {quantity}
-                  </span>
-                  <button
-                    className="px-3 py-1 rounded-r-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition"
-                    onClick={() => setQuantity(q => q + 1)}
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
-                  <Button className="flex-1 ml-4 bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
-                    onClick={handleBuy}
-                  >
-                    Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
-                  </Button>
-                </div>
+                {/* Investment controls: disable if fundingComplete */}
+                {fundingComplete ? (
+                  <div className="text-fuchsia-700 font-bold text-center w-full py-2">
+                    Funding goal reached! No further investments allowed.
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      className="px-3 py-1 rounded-l-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition disabled:opacity-50"
+                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                      disabled={quantity === 1}
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-1 bg-fuchsia-900/30 text-[#3d2c1e] font-mono text-lg border border-fuchsia-700/40">
+                      {quantity}
+                    </span>
+                    <button
+                      className="px-3 py-1 rounded-r-lg bg-fuchsia-700/30 text-[#3d2c1e] font-bold text-lg hover:bg-fuchsia-700/50 transition"
+                      onClick={() => setQuantity(q => q + 1)}
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                    <Button className="flex-1 ml-4 bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1]"
+                      onClick={handleBuy}
+                    >
+                      Buy {p.tokenSymbol ? `$${p.tokenSymbol}` : "Tokens"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </Card>
 
