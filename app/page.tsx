@@ -140,9 +140,11 @@ export default function HomePage() {
             Join a global community funding and governing scientific breakthroughs.
           </motion.p>
           <motion.div variants={heroItem}>
-            <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
-              Book Now
-            </Button>
+            <Link href="/projects">
+              <Button className="bg-[#a68c7c] hover:bg-[#8c715c] text-white text-lg px-8 py-4 rounded-xl shadow-md font-bold transition-all duration-300">
+                Look at all the projects
+              </Button>
+            </Link>
           </motion.div>
         </motion.div>
       </motion.section>
