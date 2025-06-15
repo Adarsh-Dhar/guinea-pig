@@ -124,6 +124,8 @@ export default function CreateProjectPage() {
     // Client-side validation for funding < 100 * price
     const price = parseFloat(initialPrice)
     const funding = parseFloat(totalFunding)
+    // New: Validate milestone funding sum
+    const milestoneFundingSum = milestones.reduce((sum, m) => sum + (parseFloat(m.funding) || 0), 0)
     if (isNaN(price) || isNaN(funding)) {
       setFormError("Please enter valid numbers for price and funding.")
       setLoading(false)
@@ -136,6 +138,11 @@ export default function CreateProjectPage() {
     }
     if (funding / price !== Math.floor(funding / price)) {
       setFormError("Total funding divided by royalty token price must be an integer (no decimals allowed).")
+      setLoading(false)
+      return
+    }
+    if (milestoneFundingSum !== funding) {
+      setFormError("The sum of all milestone funding amounts must equal the total project funding.")
       setLoading(false)
       return
     }
