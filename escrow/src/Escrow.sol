@@ -2,13 +2,12 @@
 pragma solidity ^0.8.19;
 
 import "../lib/Openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "../lib/Openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /**
  * @title MilestoneEscrow
  * @dev Escrow contract that holds native tokens and releases them based on milestone completion
  */
-contract MilestoneEscrow is ReentrancyGuard, Ownable {
+contract MilestoneEscrow is ReentrancyGuard {
     struct Escrow {
         address payer;
         address recipient;
@@ -89,7 +88,13 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor() Ownable(msg.sender) ReentrancyGuard() {}
+    // New modifier for escrow recipient as 'owner' for that escrow
+    modifier onlyEscrowRecipient(uint256 _escrowId) {
+        require(escrows[_escrowId].recipient == msg.sender, "Only escrow recipient can call this");
+        _;
+    }
+
+    constructor() ReentrancyGuard() {}
 
     /**
      * @dev Add additional funds to an existing escrow
@@ -206,116 +211,6 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         return escrowId;
     }
 
-    /**
-     * @dev Complete a milestone and release funds
-     * @param _escrowId ID of the escrow
-     * @param _milestoneId ID of the milestone to complete
-     */
-    function completeMilestone(uint256 _escrowId, uint256 _milestoneId) 
-        external 
-        escrowExists(_escrowId) 
-        onlyPayer(_escrowId) 
-        escrowActive(_escrowId) 
-        nonReentrant 
-    {
-        Escrow storage escrow = escrows[_escrowId];
-        require(_milestoneId < escrow.milestoneCount, "Invalid milestone ID");
-        require(!escrow.milestones[_milestoneId].completed, "Milestone already completed");
-
-        // Mark milestone as completed
-        escrow.milestones[_milestoneId].completed = true;
-        escrow.milestones[_milestoneId].completedAt = block.timestamp;
-        escrow.completedMilestones++;
-
-        uint256 releaseAmount = escrow.milestones[_milestoneId].amount;
-        escrow.releasedAmount += releaseAmount;
-
-        // Transfer funds to recipient
-        (bool success, ) = escrow.recipient.call{value: releaseAmount}("");
-        require(success, "Transfer failed");
-
-        emit MilestoneCompleted(_escrowId, _milestoneId, releaseAmount, escrow.recipient);
-        emit FundsReleased(_escrowId, escrow.recipient, releaseAmount);
-
-        // Check if all milestones are completed
-        if (escrow.completedMilestones == escrow.milestoneCount) {
-            escrow.isActive = false;
-        }
-    }
-
-    /**
-     * @dev Cancel escrow and refund remaining funds to payer
-     * @param _escrowId ID of the escrow to cancel
-     */
-    function cancelEscrow(uint256 _escrowId) 
-        external 
-        escrowExists(_escrowId) 
-        onlyPayer(_escrowId) 
-        escrowActive(_escrowId) 
-        nonReentrant 
-    {
-        Escrow storage escrow = escrows[_escrowId];
-        uint256 refundAmount = escrow.totalAmount - escrow.releasedAmount;
-        
-        escrow.isActive = false;
-
-        if (refundAmount > 0) {
-            (bool success, ) = escrow.payer.call{value: refundAmount}("");
-            require(success, "Refund failed");
-        }
-
-        emit EscrowCancelled(_escrowId, escrow.payer, refundAmount);
-    }
-
-    /**
-     * @dev Get escrow details
-     */
-    function getEscrowDetails(uint256 _escrowId) 
-        external 
-        view 
-        escrowExists(_escrowId) 
-        returns (
-            address payer,
-            address recipient,
-            uint256 totalAmount,
-            uint256 releasedAmount,
-            uint256 milestoneCount,
-            uint256 completedMilestones,
-            bool isActive,
-            uint256 createdAt
-        ) 
-    {
-        Escrow storage escrow = escrows[_escrowId];
-        return (
-            escrow.payer,
-            escrow.recipient,
-            escrow.totalAmount,
-            escrow.releasedAmount,
-            escrow.milestoneCount,
-            escrow.completedMilestones,
-            escrow.isActive,
-            escrow.createdAt
-        );
-    }
-
-    /**
-     * @dev Get milestone details
-     */
-    function getMilestone(uint256 _escrowId, uint256 _milestoneId) 
-        external 
-        view 
-        escrowExists(_escrowId) 
-        returns (
-            string memory description,
-            uint256 amount,
-            bool completed,
-            uint256 completedAt
-        ) 
-    {
-        require(_milestoneId < escrows[_escrowId].milestoneCount, "Invalid milestone ID");
-        Milestone storage milestone = escrows[_escrowId].milestones[_milestoneId];
-        return (milestone.description, milestone.amount, milestone.completed, milestone.completedAt);
-    }
 
     /**
      * @dev Get remaining balance in escrow
@@ -330,37 +225,20 @@ contract MilestoneEscrow is ReentrancyGuard, Ownable {
         return escrow.totalAmount - escrow.releasedAmount;
     }
 
-    /**
-     * @dev Emergency withdrawal function (only owner)
-     */
-    function emergencyWithdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No funds to withdraw");
-        
-        (bool success, ) = owner().call{value: balance}("");
-        require(success, "Emergency withdrawal failed");
-    }
 
     /**
-     * @dev Get contract balance
-     */
-    function getContractBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-
-    /**
-     * @dev Owner can withdraw a specified amount from a given escrow
+     * @dev Escrow recipient can withdraw a specified amount from a given escrow
      * @param _escrowId ID of the escrow to withdraw from
      * @param _amount Amount to withdraw
      */
-    function ownerWithdrawFromEscrow(uint256 _escrowId, uint256 _amount) external {
+    function ownerWithdrawFromEscrow(uint256 _escrowId, uint256 _amount) external onlyEscrowRecipient(_escrowId) {
         Escrow storage escrow = escrows[_escrowId];
         require(escrow.isActive, "Escrow is not active");
         require(_amount > 0, "Amount must be greater than zero");
         require(_amount <= (escrow.totalAmount - escrow.releasedAmount), "Insufficient escrow balance");
 
         escrow.releasedAmount += _amount;
-        (bool success, ) = owner().call{value: _amount}("");
+        (bool success, ) = escrow.recipient.call{value: _amount}("");
         require(success, "Owner withdrawal failed");
     }
 
