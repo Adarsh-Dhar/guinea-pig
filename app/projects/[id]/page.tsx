@@ -116,7 +116,7 @@ export default function ProjectDetailPage() {
         functionName: 'getEscrowBalance',
         args: [BigInt(project.project.escrowId)],
       });
-      console.log("escrowBalance", escrowBalance);
+      // console.log("escrowBalance", escrowBalance);
       // Ensure funding is a string or number before converting to BigInt
       const fundingBigInt = parseEther(funding.toString());
       const escrowBalanceBigInt = BigInt(String(escrowBalance));
@@ -140,7 +140,7 @@ export default function ProjectDetailPage() {
           args: [BigInt(project.project.escrowId), fundingBigInt],
           account: userWalletAddress,
         });
-        console.log('ownerWithdrawFromEscrow txHash:', txHash);
+        // console.log('ownerWithdrawFromEscrow txHash:', txHash);
       } catch (err: any) {
         toast({
           title: 'Withdrawal Failed',
@@ -180,7 +180,7 @@ export default function ProjectDetailPage() {
         title: 'Milestone Claimed',
         description: `${name} has been successfully claimed!`,
       });
-      console.log(`Claimed milestone: ${name}`);
+      // console.log(`Claimed milestone: ${name}`);
     } catch (err: any) {
       toast({
         title: 'Claim Error',
@@ -201,7 +201,7 @@ export default function ProjectDetailPage() {
         return res.json();
       })
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         setProject(data);
         setLoading(false);
       })
@@ -233,7 +233,7 @@ export default function ProjectDetailPage() {
           });
           // Convert balance to readable format
           const formatted = Number(balance) / Math.pow(10, Number(decimals));
-          console.log(`User has ${formatted} royalty tokens (${royaltyTokenAddress})`);
+          // console.log(`User has ${formatted} royalty tokens (${royaltyTokenAddress})`);
         } catch (err) {
           console.error("Failed to fetch royalty token balance", err);
         }
@@ -363,7 +363,7 @@ export default function ProjectDetailPage() {
       return;
     }
     if (!userWalletAddress) {
-      console.log("Please connect your wallet first.");
+      // console.log("Please connect your wallet first.");
       return;
     }
     if (!walletClient) {
@@ -378,7 +378,7 @@ export default function ProjectDetailPage() {
       // 1. Send ETH to escrow contract
       const priceToPay = currentPrice !== null ? currentPrice : (project.project.tokenPrice || 0);
       const value = parseEther((priceToPay * quantity).toString());
-      console.log("escrowId", BigInt(project.project.escrowId));
+      // console.log("escrowId", BigInt(project.project.escrowId));
       // Call addFunds on the escrow contract
       const txHash = await walletClient.writeContract({
         address: escrowAddress,
@@ -392,10 +392,10 @@ export default function ProjectDetailPage() {
         value,
         account: userWalletAddress,
       });
-      console.log("addFunds txHash:", txHash);
+      // console.log("addFunds txHash:", txHash);
       // Wait for receipt
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-      console.log("addFunds receipt:", receipt);
+      // console.log("addFunds receipt:", receipt);
 
       // 2. Mint royalty tokens to user using client.ipAccount.transferErc20 (copied code style)
       if (project?.project?.ipId && project?.project?.royaltyToken?.address) {
@@ -419,9 +419,9 @@ export default function ProjectDetailPage() {
             waitForTransaction: true,
           },
         });
-        console.log(`${quantity} royalty token(s) (IP) minted to user. Tx hash: ${response.txHash}`);
+        // console.log(`${quantity} royalty token(s) (IP) minted to user. Tx hash: ${response.txHash}`);
         if (response.receipt) {
-          console.log(`Mint transaction confirmed in block: ${response.receipt.blockNumber}`);
+          // console.log(`Mint transaction confirmed in block: ${response.receipt.blockNumber}`);
         }
       } else {
         console.error("No ipId or royalty token address found for this project.");
@@ -649,12 +649,6 @@ export default function ProjectDetailPage() {
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  value="data"
-                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
-                >
-                  Live Data
-                </TabsTrigger>
-                <TabsTrigger
                   value="governance"
                   className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
@@ -737,16 +731,6 @@ export default function ProjectDetailPage() {
                       <span className="text-[#3d2c1e] font-bold">{p.royaltyRate ? `${p.royaltyRate}%` : "-"}</span>
                     </div>
                   </div>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="data" className="space-y-6">
-                <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
-                  <div className="flex items-center mb-4">
-                    <Activity className="h-6 w-6 text-[#a68c7c] mr-2" />
-                    <h3 className="text-[#3d2c1e] text-xl font-bold">Live Experiment Data</h3>
-                  </div>
-                  <div className="text-[#8c715c]">No live data available.</div>
                 </Card>
               </TabsContent>
 
@@ -979,19 +963,6 @@ export default function ProjectDetailPage() {
                     </Button>
                   </div>
                 )}
-              </div>
-            </Card>
-
-            {/* Stats Card */}
-            <Card className="bg-[#f3ede7]/5 backdrop-blur-lg border border-[#e5ded7]/10 rounded-xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[#3d2c1e] text-xl font-bold">Project Stats</h3>
-                <button onClick={toggleExpand} className="text-[#8c715c] hover:text-[#3d2c1e]">
-                  {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                </button>
-              </div>
-              <div className="space-y-3">
-                <div className="text-[#8c715c]">No stats available.</div>
               </div>
             </Card>
           </motion.div>

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       },
     })
     const updatedProject = await prisma.project.findUnique({ where: { id: projectId } })
-    console.log("Updated currentFunding:", updatedProject?.currentFunding)
+    // console.log("Updated currentFunding:", updatedProject?.currentFunding)
     return NextResponse.json({ investment }, { status: 201 })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create investment', details: (error as any)?.message }, { status: 500 })

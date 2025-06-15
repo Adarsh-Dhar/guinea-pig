@@ -15,6 +15,6 @@ export async function uploadJSONToIPFS(jsonMetadata: any): Promise<string> {
  * @returns {Promise<any[]>} List of files
  */
 export async function getAllFilesFromPinata() {
-    console.log(await pinata.listFiles().all())
+    // console.log(await pinata.listFiles().all())
     return await pinata.listFiles().all();
 }

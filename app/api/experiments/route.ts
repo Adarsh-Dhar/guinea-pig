@@ -21,7 +21,7 @@ export async function GET() {
 
 // POST: Create a new experiment (project)
 export async function POST(req: NextRequest) {
-    console.log("req")
+    // console.log("req")
   try {
     const body = await req.json()
     const {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       ipId,
       escrowId,
     } = body
-    console.log("body", body)
+    // console.log("body", body)
 
     // Enforce max 100 royalty tokens and funding constraint
     const price = parseFloat(initialPrice)
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       }
     }
     // --- END ADD ---
-    console.log("project", project)
+    // console.log("project", project)
     return NextResponse.json({ project }, { status: 201 })
   } catch (error) {
     console.error(error)

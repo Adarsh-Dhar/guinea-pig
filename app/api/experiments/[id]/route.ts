@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 // GET: Return a single experiment/project by ID
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  console.log('GET /api/experiments/[id] called with id:', id)
+  // console.log('GET /api/experiments/[id] called with id:', id)
   try {
     const project = await prisma.project.findFirst({
       where: {

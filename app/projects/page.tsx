@@ -25,7 +25,7 @@ export default function ProjectsPage() {
         const res = await fetch("/api/experiments")
         if (!res.ok) throw new Error("Failed to fetch projects")
         const data = await res.json()
-        console.log("data", data)
+        // console.log("data", data)
         setProjects(data.projects || [])
       } catch (e) {
         setProjects([])
