@@ -1,1 +1,1 @@
-export const escrowAddress = "0x74f192bf567C302713eE54B0ab1DDd529eB5c1F9";
+export const escrowAddress = "0x953c3D981b7EA948F343c2752dA24465F07F49F7";

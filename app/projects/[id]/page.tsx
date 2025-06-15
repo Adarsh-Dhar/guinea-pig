@@ -98,10 +98,72 @@ export default function ProjectDetailPage() {
     setTimeout(() => setShowConfetti(false), 4000);
   };
 
-  // Handler for claiming a milestone (calls backend)
+  // Handler for claiming a milestone (calls backend and interacts with escrow contract)
   const handleClaimMilestone = async (milestoneId: string, name: string) => {
     setClaimingMilestoneId(milestoneId);
     try {
+      // Find the milestone index and funding amount
+      const milestoneIndex = project?.project?.milestones.findIndex((m: any) => m.id === milestoneId);
+      if (milestoneIndex === -1) throw new Error('Milestone not found');
+      const funding = project?.project?.milestones[milestoneIndex].funding;
+      if (!funding || !project?.project?.escrowId) throw new Error('Funding or escrowId missing');
+      if (!walletClient) throw new Error('Wallet client not available');
+
+      // 1. Check escrow balance
+      const escrowBalance = await publicClient.readContract({
+        address: escrowAddress,
+        abi: escrowAbi,
+        functionName: 'getEscrowBalance',
+        args: [BigInt(project.project.escrowId)],
+      });
+      console.log("escrowBalance", escrowBalance);
+      // Ensure funding is a string or number before converting to BigInt
+      const fundingBigInt = parseEther(funding.toString());
+      const escrowBalanceBigInt = BigInt(String(escrowBalance));
+      if (escrowBalanceBigInt < fundingBigInt) {
+        toast({
+          title: 'Insufficient Escrow Balance',
+          description: `Escrow balance is less than required for this milestone. Please add more funds.`,
+          variant: 'destructive',
+        });
+        setClaimingMilestoneId(null);
+        return;
+      }
+
+      // 2. Withdraw funds as owner
+      let txHash;
+      try {
+        txHash = await walletClient.writeContract({
+          address: escrowAddress,
+          abi: escrowAbi,
+          functionName: 'ownerWithdrawFromEscrow',
+          args: [BigInt(project.project.escrowId), fundingBigInt],
+          account: userWalletAddress,
+        });
+        console.log('ownerWithdrawFromEscrow txHash:', txHash);
+      } catch (err: any) {
+        toast({
+          title: 'Withdrawal Failed',
+          description: err?.message || 'Failed to withdraw funds from escrow.',
+          variant: 'destructive',
+        });
+        setClaimingMilestoneId(null);
+        return;
+      }
+      // Wait for transaction receipt
+      try {
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+      } catch (err: any) {
+        toast({
+          title: 'Transaction Error',
+          description: err?.message || 'Transaction did not complete.',
+          variant: 'destructive',
+        });
+        setClaimingMilestoneId(null);
+        return;
+      }
+
+      // 3. Update milestone as claimed in DB
       const res = await fetch('/api/milestones', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +181,12 @@ export default function ProjectDetailPage() {
         description: `${name} has been successfully claimed!`,
       });
       console.log(`Claimed milestone: ${name}`);
-    } catch (err) {
+    } catch (err: any) {
+      toast({
+        title: 'Claim Error',
+        description: err?.message || 'Failed to claim milestone',
+        variant: 'destructive',
+      });
       console.error(err);
     }
     setClaimingMilestoneId(null);
