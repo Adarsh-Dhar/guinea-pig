@@ -923,18 +923,6 @@ export default function ProjectDetailPage() {
                     <span className="text-[#3d2c1e]">{p.currentFunding ? `$${p.currentFunding} / $${p.totalFunding}` : `0 / $${p.totalFunding || '-'}`}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
-                    <div className="text-[#8c715c] mb-1">Token Price</div>
-                    <div className="text-[#a68c7c] font-bold">{currentPrice !== null ? currentPrice.toFixed(4) : (p.tokenPrice || 1)}</div>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
-                    <div className="text-[#8c715c] mb-1">24h Change</div>
-                    <div className={priceChange24h !== null && priceChange24h >= 0 ? "text-fuchsia-400 text-lg font-bold" : "text-red-400 text-lg font-bold"}>
-                      {priceChange24h !== null ? `${priceChange24h >= 0 ? "+" : ""}${priceChange24h.toFixed(2)}%` : "-"}
-                    </div>
-                  </motion.div>
-                </div>
                 <div className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-[#3d2c1e]">Your Investment</span>

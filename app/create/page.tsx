@@ -225,12 +225,14 @@ export default function CreateProjectPage() {
         // Prepare milestone data
         const milestoneDescriptions = milestones.map(m => m.title || "Milestone")
         const milestoneAmounts = milestones.map(m => parseEther(m.funding || "0"))
+
+        console.log("current address", address)
         // Write contract
         const txHash = await walletClient.writeContract({
           address: escrowAddress,
           abi: escrowAbi,
           functionName: "createEscrow",
-          args: ["0x29d5ea019FA72B489C44F15b7E95771b399D37Ef", milestoneDescriptions, milestoneAmounts],
+          args: [address, milestoneDescriptions, milestoneAmounts],
         })
         // Wait for receipt
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
