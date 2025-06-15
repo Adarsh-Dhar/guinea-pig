@@ -177,6 +177,17 @@ export default function ProjectsPage() {
             >
               Microbiome
             </Badge>
+            <Badge
+              variant={selectedCategory === "Other" ? "default" : "outline"}
+              className={
+                selectedCategory === "Other"
+                  ? "bg-[#d1bfa3] text-[#3d2c1e] cursor-pointer"
+                  : "border-[#e5ded7] text-[#3d2c1e]/80 hover:border-[#a68c7c] cursor-pointer"
+              }
+              onClick={() => setSelectedCategory("Other")}
+            >
+              Other
+            </Badge>
           </div>
         </motion.div>
 
@@ -214,7 +225,7 @@ export default function ProjectsPage() {
                           variant="outline"
                           className={
                             status === "Active"
-                              ? "border-green-400 text-green-400 px-3 py-1 rounded-full text-xs font-medium"
+                              ? "border-[#d1bfa3] text-[#d1bfa3] px-3 py-1 rounded-full text-xs font-medium"
                               : "border-cyan-400 text-cyan-400 px-3 py-1 rounded-full text-xs font-medium"
                           }
                         >
@@ -226,7 +237,7 @@ export default function ProjectsPage() {
 
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-[#a68c7c] font-mono font-bold">{token}</span>
-                        <span className="text-green-400 font-bold">{roi}</span>
+                        <span className="text-[#d1bfa3] font-bold">{roi}</span>
                       </div>
 
                       <div className="space-y-2 mb-4">
@@ -245,17 +256,6 @@ export default function ProjectsPage() {
                               className="absolute top-0 left-0 h-full w-full bg-[#a68c7c] animate-pulse opacity-60"
                             />
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div className="flex items-center space-x-2">
-                          <Users className="h-4 w-4 text-[#a68c7c]" />
-                          <span className="text-[#3d2c1e]/70">{investors} investors</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-[#a68c7c]" />
-                          <span className="text-[#3d2c1e]/70">{phase}</span>
                         </div>
                       </div>
 
