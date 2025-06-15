@@ -591,7 +591,7 @@ export default function ProjectDetailPage() {
             <Badge className="bg-[#a68c7c] text-[#3d2c1e] px-3 py-1 rounded-full">
               {p.category || "-"}
             </Badge>
-            <Badge className="border-green-400 text-green-400 px-3 py-1 rounded-full" variant="outline">
+            <Badge className="border-fuchsia-400 text-fuchsia-400 px-3 py-1 rounded-full" variant="outline">
               Active
             </Badge>
             <motion.span
@@ -638,13 +638,13 @@ export default function ProjectDetailPage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="data"
-                  className="text-black data-[state=active]:bg-[#e5ded7] data-[state=active]:text-black rounded-lg"
+                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Live Data
                 </TabsTrigger>
                 <TabsTrigger
                   value="governance"
-                  className="text-black data-[state=active]:bg-[#f3ede7] data-[state=active]:text-[#3d2c1e] rounded-lg"
+                  className="text-black data-[state=active]:bg-[#a68c7c] data-[state=active]:text-[#3d2c1e] rounded-lg"
                 >
                   Governance
                 </TabsTrigger>
@@ -674,16 +674,16 @@ export default function ProjectDetailPage() {
                           <motion.div
                             key={m.id}
                             whileHover={{ scale: 1.02 }}
-                            className="p-4 bg-gradient-to-r from-green-900/20 to-green-800/10 border border-green-400/30 rounded-xl flex items-center justify-between"
+                            className="p-4 bg-gradient-to-r from-fuchsia-900/20 to-fuchsia-800/10 border border-fuchsia-400/30 rounded-xl flex items-center justify-between"
                           >
                             <div className="flex items-center">
-                              <div className="h-10 w-10 rounded-full bg-green-400/20 flex items-center justify-center mr-3">
-                                <Sparkles className="h-5 w-5 text-green-400" />
+                              <div className="h-10 w-10 rounded-full bg-fuchsia-400/20 flex items-center justify-center mr-3">
+                                <Sparkles className="h-5 w-5 text-fuchsia-400" />
                               </div>
-                              <span className="text-green-400 font-medium">{m.title}</span>
+                              <span className="text-fuchsia-400 font-medium">{m.title}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge className="bg-green-500 text-[#3d2c1e]">{m.funding}</Badge>
+                              <Badge className="bg-fuchsia-500 text-[#3d2c1e]">{m.funding}</Badge>
                               <Button
                                 className={`ml-2 bg-[#a68c7c] hover:bg-[#8c715c] text-[#fdf6f1] ${isClaimed ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={!canClaim || isClaimed || claimingMilestoneId === m.id}
@@ -783,17 +783,17 @@ export default function ProjectDetailPage() {
                   ) : (
                     <div className="space-y-6">
                       {proposals.map((proposal: any) => (
-                        <Card key={proposal.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
+                        <Card key={proposal.id} className="bg-gradient-to-r from-[#a68c7c]/20 to-[#f3ede7]/10 border border-[#a68c7c]/30 rounded-xl p-4">
                           <div className="flex items-center mb-2">
-                            <span className="text-purple-400 font-bold text-lg mr-2">{proposal.title}</span>
-                            <Badge className="ml-2 bg-purple-700/40 text-[#3d2c1e]">{proposal.status}</Badge>
+                            <span className="text-[#a68c7c] font-bold text-lg mr-2">{proposal.title}</span>
+                            <Badge className="ml-2 bg-[#a68c7c]/40 text-[#3d2c1e]">{proposal.status}</Badge>
                           </div>
                           <div className="text-[#8c715c] mb-2">{proposal.description}</div>
                           <div className="flex gap-4 items-center mb-2">
                             <span className="text-[#8c715c] text-sm">Ends: {new Date(proposal.endsAt).toLocaleString()}</span>
                           </div>
                           <div className="flex gap-4 items-center mb-2">
-                            <span className="text-green-400 font-mono">For: {proposal.votes.filter((v: any) => v.choice === 'for').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
+                            <span className="text-fuchsia-400 font-mono">For: {proposal.votes.filter((v: any) => v.choice === 'for').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
                             <span className="text-red-400 font-mono">Against: {proposal.votes.filter((v: any) => v.choice === 'against').reduce((acc: number, v: any) => acc + Number(v.weight) / Math.pow(10, userTokenDecimals), 0)}</span>
                             <span className="text-[#a68c7c] font-mono">Quorum: 20</span>
                           </div>
@@ -863,11 +863,11 @@ export default function ProjectDetailPage() {
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review: any) => (
-                        <Card key={review.id} className="bg-gradient-to-r from-purple-900/20 to-purple-800/10 border border-purple-400/30 rounded-xl p-4">
+                        <Card key={review.id} className="bg-gradient-to-r from-[#a68c7c]/20 to-[#f3ede7]/10 border border-[#a68c7c]/30 rounded-xl p-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-purple-400 font-mono">{review.reviewer?.address?.slice(0, 6)}...{review.reviewer?.address?.slice(-4)}</span>
+                            <span className="text-[#a68c7c] font-mono">{review.reviewer?.address?.slice(0, 6)}...{review.reviewer?.address?.slice(-4)}</span>
                             <span className="text-[#8c715c] text-xs">{new Date(review.createdAt).toLocaleString()}</span>
-                            {review.rewarded && <span className="ml-2 text-green-400">Rewarded</span>}
+                            {review.rewarded && <span className="ml-2 text-fuchsia-400">Rewarded</span>}
                           </div>
                           <div className="mt-2 text-[#3d2c1e]">{review.content}</div>
                           <div className="flex gap-2 mt-2">
@@ -930,7 +930,7 @@ export default function ProjectDetailPage() {
                   </motion.div>
                   <motion.div whileHover={{ scale: 1.05 }} className="p-3 bg-[#f3ede7]/5 rounded-lg text-center">
                     <div className="text-[#8c715c] mb-1">24h Change</div>
-                    <div className={priceChange24h !== null && priceChange24h >= 0 ? "text-green-400 text-lg font-bold" : "text-red-400 text-lg font-bold"}>
+                    <div className={priceChange24h !== null && priceChange24h >= 0 ? "text-fuchsia-400 text-lg font-bold" : "text-red-400 text-lg font-bold"}>
                       {priceChange24h !== null ? `${priceChange24h >= 0 ? "+" : ""}${priceChange24h.toFixed(2)}%` : "-"}
                     </div>
                   </motion.div>
